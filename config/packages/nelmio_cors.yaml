@@ -1,0 +1,27 @@
+nelmio_cors:
+    defaults:
+        # Utiliser les regex pour les origines
+        origin_regex: true
+        # Accepter les origines définies dans .env
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        # Méthodes HTTP autorisées
+        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']
+        # Headers autorisés dans les requêtes
+        allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+        # Headers exposés dans les réponses
+        expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
+        # Durée de cache des preflight requests (en secondes)
+        max_age: 3600
+        # Autoriser les cookies et credentials
+        allow_credentials: true
+    
+    paths:
+        # Configuration spécifique pour les endpoints API
+        '^/api/': 
+            origin_regex: true
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']
+            allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+            expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
+            max_age: 3600
+            allow_credentials: true
