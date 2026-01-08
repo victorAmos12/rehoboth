@@ -66,10 +66,11 @@ class JwtTokenListener implements EventSubscriberInterface
             return;
         }
 
-        // Ignorer les endpoints publics (login, etc.)
+        // Ignorer les endpoints publics (login, 2FA verification, etc.)
         $publicEndpoints = [
             '/api/auth/login',
             '/api/auth/logout',
+            '/api/auth/verify-2fa',
         ];
 
         if (in_array($request->getPathInfo(), $publicEndpoints)) {

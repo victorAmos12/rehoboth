@@ -112,6 +112,12 @@ class Utilisateurs implements PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'authentification_2fa', type: 'boolean', precision: 10, nullable: true)]
     private ?bool $authentification2fa = null;
 
+    #[ORM\Column(name: 'secret_2fa', type: 'string', length: 255, precision: 10, nullable: true)]
+    private ?string $secret2fa = null;
+
+    #[ORM\Column(name: 'pin_2fa', type: 'string', length: 255, precision: 10, nullable: true)]
+    private ?string $pin2fa = null;
+
     #[ORM\Column(type: 'datetime', precision: 10, nullable: true)]
     private ?\DateTimeInterface $derniereConnexion = null;
 
@@ -561,6 +567,28 @@ class Utilisateurs implements PasswordAuthenticatedUserInterface
     public function isAuthentification2fa(): ?bool
     {
         return $this->authentification2fa;
+    }
+
+    public function getSecret2fa(): ?string
+    {
+        return $this->secret2fa;
+    }
+
+    public function setSecret2fa(?string $secret2fa): static
+    {
+        $this->secret2fa = $secret2fa;
+        return $this;
+    }
+
+    public function getPin2fa(): ?string
+    {
+        return $this->pin2fa;
+    }
+
+    public function setPin2fa(?string $pin2fa): static
+    {
+        $this->pin2fa = $pin2fa;
+        return $this;
     }
 
 }

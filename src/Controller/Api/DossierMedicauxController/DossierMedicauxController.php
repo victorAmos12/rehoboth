@@ -1068,6 +1068,44 @@ class DossierMedicauxController extends AbstractController
     }
 
     /**
+     * Récupère les antécédents familiaux du patient
+     * GET /api/dossiers-medicaux/{id}/antecedents-familiaux
+     */
+    #[Route('/{id}/antecedents-familiaux', name: 'get_antecedents_familiaux', methods: ['GET'])]
+    public function getAntecedentsFamiliaux(int $id): JsonResponse
+    {
+        try {
+            $dossier = $this->entityManager->getRepository(DossiersMedicaux::class)->find($id);
+
+            if (!$dossier) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Dossier médical non trouvé',
+                ], 404);
+            }
+
+            $patient = $dossier->getPatientId();
+
+            return $this->json([
+                'success' => true,
+                'data' => [
+                    'pere' => $patient->getAntecedentsFamiliauxPere(),
+                    'mere' => $patient->getAntecedentsFamiliauxMere(),
+                    'enfants' => $patient->getAntecedentsFamiliauxEnfants(),
+                    'epouse' => $patient->getAntecedentsFamiliauxEpouse(),
+                    'autres' => $patient->getAntecedentsFamiliauxAutres(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des antécédents familiaux: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Ajoute ou met à jour les antécédents familiaux du patient
      * POST /api/dossiers-medicaux/{id}/antecedents-familiaux
      */
@@ -1118,6 +1156,41 @@ class DossierMedicauxController extends AbstractController
     }
 
     /**
+     * Récupère l'historique des vaccinations
+     * GET /api/dossiers-medicaux/{id}/vaccinations
+     */
+    #[Route('/{id}/vaccinations', name: 'get_vaccinations', methods: ['GET'])]
+    public function getVaccinations(int $id): JsonResponse
+    {
+        try {
+            $dossier = $this->entityManager->getRepository(DossiersMedicaux::class)->find($id);
+
+            if (!$dossier) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Dossier médical non trouvé',
+                ], 404);
+            }
+
+            $patient = $dossier->getPatientId();
+
+            return $this->json([
+                'success' => true,
+                'data' => [
+                    'historique' => json_decode($patient->getHistoriqueVaccinations() ?? '[]', true),
+                    'date_derniere_vaccination' => $patient->getDateDerniereVaccination()?->format('Y-m-d'),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des vaccinations: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Ajoute ou met à jour l'historique des vaccinations
      * POST /api/dossiers-medicaux/{id}/vaccinations
      */
@@ -1162,6 +1235,42 @@ class DossierMedicauxController extends AbstractController
             return $this->json([
                 'success' => false,
                 'error' => 'Erreur lors de la mise à jour des vaccinations: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les informations critiques du patient
+     * GET /api/dossiers-medicaux/{id}/informations-critiques
+     */
+    #[Route('/{id}/informations-critiques', name: 'get_informations_critiques', methods: ['GET'])]
+    public function getInformationsCritiques(int $id): JsonResponse
+    {
+        try {
+            $dossier = $this->entityManager->getRepository(DossiersMedicaux::class)->find($id);
+
+            if (!$dossier) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Dossier médical non trouvé',
+                ], 404);
+            }
+
+            $patient = $dossier->getPatientId();
+
+            return $this->json([
+                'success' => true,
+                'data' => [
+                    'habitudes_vie' => $patient->getHabitudesVie(),
+                    'facteurs_risque' => $patient->getFacteursRisque(),
+                    'observations_generales' => $patient->getObservationsGenerales(),
+                ],
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des informations critiques: ' . $e->getMessage(),
             ], 500);
         }
     }

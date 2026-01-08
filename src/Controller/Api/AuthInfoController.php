@@ -261,4 +261,60 @@ class AuthInfoController extends AbstractController
             return null;
         }
     }
+
+
+    /**
+     * DEBUG ENDPOINT - Vérifier le secret 2FA stocké
+     * GET /api/auth/debug/2fa/{userId}
+     * 
+     * ⚠️ À SUPPRIMER EN PRODUCTION !
+     */
+    // #[Route('/debug/2fa/{userId}', name: 'debug_2fa', methods: ['GET'])]
+    // public function debug2FA(int $userId): JsonResponse
+    // {
+    //     try {
+    //         $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            
+    //         if (!$utilisateur) {
+    //             return $this->json(['error' => 'User not found'], 404);
+    //         }
+            
+    //         $secret = $utilisateur->getSecret2fa();
+            
+    //         // Vérifier le secret
+    //         if (!$secret) {
+    //             return $this->json(['error' => '2FA not enabled for this user'], 400);
+    //         }
+            
+    //         // Générer le code actuel
+    //         try {
+    //             $totp = \OTPHP\TOTP::create($secret);
+    //             $currentCode = $totp->now();
+                
+    //             return $this->json([
+    //                 'user_id' => $userId,
+    //                 'login' => $utilisateur->getLogin(),
+    //                 'email' => $utilisateur->getEmail(),
+    //                 '2fa_enabled' => $utilisateur->getAuthentification2fa(),
+    //                 'secret_stored' => $secret,
+    //                 'secret_length' => strlen($secret),
+    //                 'current_code' => $currentCode,
+    //                 'server_time' => time(),
+    //                 'server_datetime' => date('Y-m-d H:i:s'),
+    //                 'message' => 'Enter the code above in Google Authenticator (should match)',
+    //             ], 200);
+    //         } catch (\Exception $e) {
+    //             return $this->json([
+    //                 'error' => 'Error generating TOTP: ' . $e->getMessage(),
+    //                 'secret_stored' => $secret,
+    //                 'secret_length' => strlen($secret),
+    //             ], 500);
+    //         }
+            
+    //     } catch (\Exception $e) {
+    //         return $this->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+
 }
+

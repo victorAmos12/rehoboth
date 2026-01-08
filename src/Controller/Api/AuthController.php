@@ -7,6 +7,7 @@ use App\Service\JwtService;
 use Doctrine\ORM\EntityManagerInterface;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\SignatureInvalidException;
+use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -199,6 +200,24 @@ class AuthController extends AbstractController
             $utilisateur->setNombreTentativesConnexion(0);
             $utilisateur->setCompteVerrouille(false);
 
+            // Vérifier si la 2FA est activée
+            if ($utilisateur->getAuthentification2fa()) {
+                // Retourner une réponse indiquant que la 2FA est requise
+                return $this->json([
+                    'success' => true,
+                    'message' => 'Authentification 2FA requise',
+                    'requires_2fa' => true,
+                    'user_id' => $utilisateur->getId(),
+                    'user' => [
+                        'id' => $utilisateur->getId(),
+                        'email' => $utilisateur->getEmail(),
+                        'login' => $utilisateur->getLogin(),
+                        'nom' => $utilisateur->getNom(),
+                        'prenom' => $utilisateur->getPrenom(),
+                    ],
+                ], 200);
+            }
+
             // Mettre à jour la dernière connexion
             $utilisateur->setDerniereConnexion(new \DateTimeImmutable());
             $this->entityManager->flush();
@@ -210,6 +229,7 @@ class AuthController extends AbstractController
             return $this->json([
                 'success' => true,
                 'message' => 'Connexion réussie',
+                'requires_2fa' => false,
                 'user' => [
                     'id' => $utilisateur->getId(),
                     'email' => $utilisateur->getEmail(),
@@ -385,6 +405,129 @@ class AuthController extends AbstractController
     }
 
     /**
+     * Endpoint pour vérifier le code 2FA lors du login
+     * POST /api/auth/verify-2fa
+     * 
+     * Body JSON:
+     * {
+     *   "user_id": 1,
+     *   "code": "123456"
+     * }
+     * 
+     * Response (Succès - 200):
+     * {
+     *   "success": true,
+     *   "message": "Code 2FA valide",
+     *   "user": {
+     *     "id": 1,
+     *     "email": "admin@rehoboth.com",
+     *     "login": "admin",
+     *     "nom": "Dupont",
+     *     "prenom": "Jean",
+     *     "telephone": "+33612345678",
+     *     "role": "Administrateur",
+     *     "profil": "Administrateur",
+     *     "specialite": null,
+     *     "hopital": "Rehoboth Hospital",
+     *     "photo": null
+     *   },
+     *   "token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+     * }
+     * 
+     * Response (Erreur - 401):
+     * {
+     *   "success": false,
+     *   "error": "Code 2FA invalide"
+     * }
+     */
+    #[Route('/verify-2fa', name: 'verify_2fa_login', methods: ['POST'])]
+    public function verify2FALogin(Request $request): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            // Vérifier les champs requis
+            if (!isset($data['user_id']) || !isset($data['code'])) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Les champs "user_id" et "code" sont requis',
+                ], 400);
+            }
+
+            $userId = (int)$data['user_id'];
+            $code = trim($data['code']);
+
+            // Récupérer l'utilisateur
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)
+                ->find($userId);
+
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            // Vérifier que la 2FA est activée
+            if (!$utilisateur->getAuthentification2fa()) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'La 2FA n\'est pas activée pour cet utilisateur',
+                ], 400);
+            }
+
+            // Valider le code TOTP
+            if (!preg_match('/^\d{6}$/', $code)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Le code doit être composé de 6 chiffres',
+                ], 400);
+            }
+
+            // Vérifier le code TOTP
+            if (!$this->verify2FACode($utilisateur->getSecret2fa(), $code)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Code 2FA invalide',
+                ], 401);
+            }
+
+            // Mettre à jour la dernière connexion
+            $utilisateur->setDerniereConnexion(new \DateTimeImmutable());
+            $this->entityManager->flush();
+
+            // Générer un token JWT
+            $token = $this->generateToken($utilisateur);
+
+            // Retourner les données de l'utilisateur
+            return $this->json([
+                'success' => true,
+                'message' => 'Code 2FA valide',
+                'user' => [
+                    'id' => $utilisateur->getId(),
+                    'email' => $utilisateur->getEmail(),
+                    'login' => $utilisateur->getLogin(),
+                    'nom' => $utilisateur->getNom(),
+                    'prenom' => $utilisateur->getPrenom(),
+                    'telephone' => $utilisateur->getTelephone(),
+                    'role' => $utilisateur->getRoleId()?->getNom(),
+                    'profil' => $utilisateur->getProfilId()?->getNom(),
+                    'specialite' => $utilisateur->getSpecialiteId()?->getNom(),
+                    'hopital' => $utilisateur->getHopitalId()?->getNom(),
+                    'photo' => $utilisateur->getPhotoProfil(),
+                ],
+                'token' => $token,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur serveur: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Endpoint de déconnexion
      * POST /api/auth/logout
      */
@@ -454,4 +597,52 @@ class AuthController extends AbstractController
             return null;
         }
     }
+
+    /**
+     * Vérifie un code TOTP 2FA
+     * 
+     * Utilise la librairie spomky-labs/otphp pour valider les codes TOTP
+     * conformément à la RFC 6238.
+     * 
+     * @param string $secret Secret TOTP de l'utilisateur (en base32)
+     * @param string $code Code TOTP à vérifier (6 chiffres)
+     * @return bool True si le code est valide, false sinon
+     * 
+     * Remarques:
+     * - La vérification inclut une tolérance de ±1 time window (±30 secondes)
+     * - Les serveurs et clients doivent être synchronisés à ±30 secondes près
+     */
+    private function verify2FACode(string $secret, string $code): bool
+    {
+        try {
+            // Créer une instance TOTP avec le secret
+            $totp = \OTPHP\TOTP::create($secret);
+            
+            // Vérifier le code
+            // La méthode verify() inclut automatiquement une tolérance de ±1 time window
+            // C'est-à-dire que les codes de -30s, 0s et +30s sont acceptés
+            $result = $totp->verify($code);
+            
+            // Logging pour débogage
+            error_log("TOTP Verification:");
+            error_log("  Secret: " . substr($secret, 0, 4) . "...");
+            error_log("  Code provided: " . $code);
+            error_log("  Verification result: " . ($result ? "VALID" : "INVALID"));
+            
+            // Si le code est invalide, on essaie aussi une vérification basique
+            if (!$result) {
+                // Générer le code actuel pour voir la différence
+                $currentCode = $totp->now();
+                error_log("  Current code on server: " . $currentCode);
+                error_log("  Time window used: " . time() . " (unix timestamp)");
+            }
+            
+            return $result;
+            
+        } catch (\Exception $e) {
+            error_log("TOTP Verification Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 }

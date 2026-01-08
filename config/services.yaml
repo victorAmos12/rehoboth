@@ -11,6 +11,8 @@ parameters:
     jwt_secret_key: '%env(JWT_SECRET_KEY)%'
     jwt_expiration_time: 900  # 15 minutes en secondes (sécurité)
     jwt_inactivity_timeout: 900  # 15 minutes d'inactivité avant expiration
+    # Timezone configuration - Africa/Lubumbashi (CAT = UTC+2)
+    app_timezone: 'Africa/Lubumbashi'
 
 services:
     # default configuration for services in *this* file
