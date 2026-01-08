@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use DateTimeInterface;
 use DateTimeImmutable;
+use App\Entity\Administration\Services;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'affectations_utilisateurs', indexes: [
