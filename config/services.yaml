@@ -32,5 +32,10 @@ services:
             $expirationTime: '%jwt_expiration_time%'
             $inactivityTimeout: '%jwt_inactivity_timeout%'
 
+    # Configuration du service Google Auth
+    App\Service\GoogleAuthService:
+        arguments:
+            $clientSecretPath: '%kernel.project_dir%/client_secret_295506267524-tfjn0dephvjhonsaqljk1q3ise7ggn3s.apps.googleusercontent.com.json'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

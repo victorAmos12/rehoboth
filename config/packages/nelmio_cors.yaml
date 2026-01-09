@@ -16,6 +16,17 @@ nelmio_cors:
         allow_credentials: true
     
     paths:
+        # Configuration spécifique pour les endpoints Google Auth
+        # IMPORTANT: Ne pas ajouter d'en-têtes COOP ici, laisser SecurityHeadersListener s'en charger
+        '^/api/auth/google/':
+            origin_regex: true
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']
+            allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+            expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
+            max_age: 3600
+            allow_credentials: true
+        
         # Configuration spécifique pour les endpoints API
         '^/api/': 
             origin_regex: true
