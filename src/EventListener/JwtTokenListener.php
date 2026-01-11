@@ -77,20 +77,28 @@ class JwtTokenListener implements EventSubscriberInterface
             return;
         }
 
-        // Récupérer le header Authorization
+        // Récupérer le token depuis le header Authorization ou le query param
+        $token = null;
+        
+        // 1. D'abord, essayer le header Authorization
         $authHeader = $request->headers->get('Authorization');
+        if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
+            $token = substr($authHeader, 7);
+        }
+        
+        // 2. Si pas de header Authorization, essayer le query param ?token=...
+        if (!$token) {
+            $token = $request->query->get('token');
+        }
 
-        // Si pas de token, rejeter
-        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+        // Si toujours pas de token, rejeter
+        if (!$token) {
             $event->setResponse(new JsonResponse([
                 'success' => false,
                 'error' => 'Token manquant. Authentification requise.',
             ], 401));
             return;
         }
-
-        // Extraire le token
-        $token = substr($authHeader, 7);
 
         // Valider le token
         try {

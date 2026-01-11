@@ -763,6 +763,25 @@ class UtilisateursControllers extends AbstractController
             // Photo de profil
             if (isset($files['photo_profil']) && $files['photo_profil'] instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
                 $photoFile = $files['photo_profil'];
+
+                // Valider localement les contraintes (mimetype et taille à 10MB)
+                $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $maxSize = 10 * 1024 * 1024; // 10 MB
+
+                if (!in_array($photoFile->getMimeType(), $allowedMimes)) {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Type de fichier non autorisé pour la photo. Formats autorisés: jpg, png, gif, webp',
+                    ], 400);
+                }
+
+                if ($photoFile->getSize() > $maxSize) {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'La photo dépasse la taille maximale autorisée de 10MB',
+                    ], 400);
+                }
+
                 $photoName = $this->saveUploadedFile($photoFile, $uploadsDir, 'photo_');
                 if ($photoName) {
                     // Supprimer l'ancienne photo si elle existe
@@ -773,12 +792,36 @@ class UtilisateursControllers extends AbstractController
                         }
                     }
                     $utilisateur->setPhotoProfil('/uploads/profils/' . $photoName);
+                } else {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Erreur lors de l\'enregistrement de la photo',
+                    ], 500);
                 }
             }
 
             // Signature numérique
             if (isset($files['signature_numerique']) && $files['signature_numerique'] instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
                 $sigFile = $files['signature_numerique'];
+
+                // Réutiliser mêmes règles de validation
+                $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $maxSize = 10 * 1024 * 1024; // 10 MB
+
+                if (!in_array($sigFile->getMimeType(), $allowedMimes)) {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Type de fichier non autorisé pour la signature. Formats autorisés: jpg, png, gif, webp',
+                    ], 400);
+                }
+
+                if ($sigFile->getSize() > $maxSize) {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'La signature dépasse la taille maximale autorisée de 10MB',
+                    ], 400);
+                }
+
                 $sigName = $this->saveUploadedFile($sigFile, $uploadsDir, 'signature_');
                 if ($sigName) {
                     // Supprimer l'ancienne signature si elle existe
@@ -789,6 +832,11 @@ class UtilisateursControllers extends AbstractController
                         }
                     }
                     $utilisateur->setSignatureNumerique('/uploads/profils/' . $sigName);
+                } else {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Erreur lors de l\'enregistrement de la signature',
+                    ], 500);
                 }
             }
 
@@ -2614,6 +2662,9 @@ class UtilisateursControllers extends AbstractController
             'login' => $user->getLogin(),
             'telephone' => $user->getTelephone(),
             'actif' => $user->getActif(),
+            // Pour les listings (et pour éviter toute ambiguïté côté front)
+            // on expose systématiquement la photo en snake_case.
+            'photo_profil' => $user->getPhotoProfil(),
             'hopital' => [
                 'id' => $user->getHopitalId()->getId(),
                 'nom' => $user->getHopitalId()->getNom(),
@@ -2640,8 +2691,11 @@ class UtilisateursControllers extends AbstractController
                 'numeroLicence' => $user->getNumeroLicence(),
                 'numeroOrdre' => $user->getNumeroOrdre(),
                 'dateEmbauche' => $user->getDateEmbauche()?->format('Y-m-d'),
+                // Compat: camelCase + snake_case
                 'photoProfil' => $user->getPhotoProfil(),
+                'photo_profil' => $user->getPhotoProfil(),
                 'signatureNumerique' => $user->getSignatureNumerique(),
+                'signature_numerique' => $user->getSignatureNumerique(),
                 'bio' => $user->getBio(),
                 'adresse' => $user->getAdresse(),
                 'ville' => $user->getVille(),
@@ -2677,6 +2731,7 @@ class UtilisateursControllers extends AbstractController
     public function generateServiceCardPdf(
         int $userId,
         int $serviceId,
+        Request $request,
         \App\Service\ServiceCardGeneratorService $cardGenerator
     ): Response|JsonResponse {
         try {
@@ -2696,7 +2751,17 @@ class UtilisateursControllers extends AbstractController
                 ], 404);
             }
 
-            $pdfContent = $cardGenerator->generateServiceCardPdf($service, $utilisateur);
+            // Construire des URLs absolues pour les images (wkhtmltopdf est plus fiable avec des URLs http)
+            $baseUrl = $request->getSchemeAndHttpHost();
+            $frontBg = $baseUrl . '/PXL_20260111_142524160.MP.jpg';
+            $backBg = $baseUrl . '/PXL_20260111_142536686.jpg';
+            $photoUrl = $utilisateur->getPhotoProfil() ? ($baseUrl . $utilisateur->getPhotoProfil()) : null;
+
+            $pdfContent = $cardGenerator->generateServiceCardPdf($service, $utilisateur, [
+                'front_bg_path' => $frontBg,
+                'back_bg_path' => $backBg,
+                'photo_url' => $photoUrl,
+            ]);
 
             $response = new Response($pdfContent);
             $response->headers->set('Content-Type', 'application/pdf');
@@ -2778,6 +2843,7 @@ class UtilisateursControllers extends AbstractController
     public function generateServiceCardPreview(
         int $userId,
         int $serviceId,
+        Request $request,
         \App\Service\ServiceCardGeneratorService $cardGenerator
     ): Response|JsonResponse {
         try {
@@ -2797,7 +2863,16 @@ class UtilisateursControllers extends AbstractController
                 ], 404);
             }
 
-            $htmlContent = $cardGenerator->generateServiceCardHtml($service, $utilisateur);
+            $baseUrl = $request->getSchemeAndHttpHost();
+            $photoUrl = $utilisateur->getPhotoProfil() ? ($baseUrl . $utilisateur->getPhotoProfil()) : null;
+
+            // Utiliser un design moderne avec couleurs au lieu d'images de fond
+            $htmlContent = $cardGenerator->generateServiceCardHtml($service, $utilisateur, [
+                'front_bg_path' => null, // Pas d'image de fond - utiliser CSS moderne
+                'back_bg_path' => null,  // Pas d'image de fond - utiliser CSS moderne
+                'photo_url' => $photoUrl,
+                'design_mode' => 'modern', // Mode design moderne avec couleurs
+            ]);
 
             $response = new Response($htmlContent);
             $response->headers->set('Content-Type', 'text/html; charset=utf-8');

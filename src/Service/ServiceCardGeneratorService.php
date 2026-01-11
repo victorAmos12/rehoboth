@@ -47,18 +47,19 @@ class ServiceCardGeneratorService
         // Préparer les données
         $data = $this->prepareServiceData($service, $utilisateur, $options);
 
-        // Générer le HTML
-        $html = $this->twig->render('service_card/pdf_card.html.twig', $data);
+        // Générer le HTML (ISO ID-1 recto/verso)
+        $html = $this->twig->render('service_card/service_card_iso_id1.html.twig', $data);
 
-        // Générer le PDF avec Snappy
+        // Générer le PDF avec Snappy au format carte bancaire (ISO ID-1)
         return $this->pdf->getOutputFromHtml($html, [
             'margin-top' => 0,
             'margin-right' => 0,
             'margin-bottom' => 0,
             'margin-left' => 0,
-            'page-size' => 'A4',
-            'orientation' => 'Portrait',
+            // on laisse le template gérer @page size
+            'disable-smart-shrinking' => true,
             'dpi' => 300,
+            'print-media-type' => true,
             'enable-local-file-access' => true,
         ]);
     }
@@ -170,7 +171,44 @@ class ServiceCardGeneratorService
         // Déterminer le niveau de détail selon les permissions
         $detailLevel = $this->permissionService->getDetailLevel($utilisateur, $service);
 
+        // Backgrounds recto/verso - Support pour mode moderne avec couleurs
+        $designMode = $options['design_mode'] ?? 'classic';
+        if ($designMode === 'modern') {
+            // Mode moderne: utiliser des couleurs CSS au lieu d'images
+            $frontBgPath = 'modern-gradient'; // Valeur spéciale pour indiquer au template d'utiliser CSS
+            $backBgPath = 'modern-solid';     // Valeur spéciale pour indiquer au template d'utiliser CSS
+        } else {
+            // Mode classique: utiliser les images spécifiées ou par défaut
+            $frontBgPath = ($options['front_bg_path'] ?? null) ?: '/PXL_20260111_142524160.MP.jpg';
+            $backBgPath  = ($options['back_bg_path'] ?? null) ?: '/PXL_20260111_142536686.jpg';
+        }
+
+        // Photo profil: chemin relatif stocké en DB (/uploads/...), ou null
+        $photoPath = $utilisateur->getPhotoProfil();
+
         $data = [
+            // Variables attendues par le template ISO
+            'photo_url' => $photoPath,
+            'utilisateur' => [
+                'id' => $utilisateur->getId(),
+                'nom' => $utilisateur->getNom(),
+                'prenom' => $utilisateur->getPrenom(),
+                'login' => $utilisateur->getLogin(),
+                'email' => $utilisateur->getEmail(),
+                'telephone' => $utilisateur->getTelephone(),
+            ],
+            'hopital_nom' => $service->getHopitalId()->getNom(),
+            'hopital_logo' => $service->getHopitalId()->getLogoUrl(),
+            'role_nom' => $utilisateur->getRoleId()->getNom(),
+            'service_nom' => $service->getNom(),
+            'service_color' => $service->getCouleurService() ?? '#2980B9',
+            'specialite' => $utilisateur->getSpecialiteId() ? $utilisateur->getSpecialiteId()->getNom() : '',
+            'nationalite' => $utilisateur->getNationalite() ?? '',
+            'adresse_physique' => $utilisateur->getAdressePhysique() ?? '',
+            'date_livraison' => $utilisateur->getDateLivraison() ? $utilisateur->getDateLivraison()->format('d/m/Y') : date('d/m/Y'),
+            'validite' => $utilisateur->getValidite() ?? '1 an',
+
+            // Données existantes (compat)
             'service' => [
                 'id' => $service->getId(),
                 'code' => $service->getCode(),
@@ -179,13 +217,16 @@ class ServiceCardGeneratorService
                 'hopital' => $service->getHopitalId()->getNom(),
                 'couleur' => $service->getCouleurService() ?? '#2980B9',
                 'logo' => $service->getLogoService(),
+                'logoService' => $service->getLogoService(),
                 'actif' => $service->getActif(),
             ],
             'user' => [
+                'id' => $utilisateur->getId(),
                 'nom' => $utilisateur->getNom(),
                 'prenom' => $utilisateur->getPrenom(),
                 'role' => $utilisateur->getRoleId()->getNom(),
                 'email' => $utilisateur->getEmail(),
+                'photo_profil' => $photoPath,
             ],
             'detailLevel' => $detailLevel,
             'generatedAt' => new \DateTime(),
@@ -234,7 +275,7 @@ class ServiceCardGeneratorService
         // Préparer les données
         $data = $this->prepareServiceData($service, $utilisateur, $options);
 
-        // Générer et retourner le HTML
-        return $this->twig->render('service_card/html_card.html.twig', $data);
+        // Générer et retourner le HTML (aperçu ISO ID-1)
+        return $this->twig->render('service_card/service_card_iso_id1.html.twig', $data);
     }
 }

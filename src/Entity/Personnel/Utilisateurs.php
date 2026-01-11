@@ -82,6 +82,15 @@ class Utilisateurs implements PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 100, precision: 10, nullable: true)]
     private ?string $nationalite = null;
 
+    #[ORM\Column(type: 'string', length: 500, precision: 10, nullable: true)]
+    private ?string $adressePhysique = null;
+
+    #[ORM\Column(type: 'date', precision: 10, nullable: true)]
+    private ?\DateTimeInterface $dateLivraison = null;
+
+    #[ORM\Column(type: 'string', length: 100, precision: 10, nullable: true)]
+    private ?string $validite = null;
+
     #[ORM\Column(type: 'string', length: 50, precision: 10, nullable: true)]
     private ?string $numeroIdentite = null;
 
@@ -359,6 +368,39 @@ class Utilisateurs implements PasswordAuthenticatedUserInterface
     public function setNationalite(?string $nationalite): static
     {
         $this->nationalite = $nationalite;
+        return $this;
+    }
+
+    public function getAdressePhysique(): ?string
+    {
+        return $this->adressePhysique;
+    }
+
+    public function setAdressePhysique(?string $adressePhysique): static
+    {
+        $this->adressePhysique = $adressePhysique;
+        return $this;
+    }
+
+    public function getDateLivraison(): ?\DateTimeInterface
+    {
+        return $this->dateLivraison;
+    }
+
+    public function setDateLivraison(?\DateTimeInterface $dateLivraison): static
+    {
+        $this->dateLivraison = $dateLivraison;
+        return $this;
+    }
+
+    public function getValidite(): ?string
+    {
+        return $this->validite;
+    }
+
+    public function setValidite(?string $validite): static
+    {
+        $this->validite = $validite;
         return $this;
     }
 

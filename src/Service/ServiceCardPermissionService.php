@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Administration\Services;
 use App\Entity\Personnel\Utilisateurs;
+use App\Entity\Personnel\AffectationsUtilisateurs;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -148,7 +149,7 @@ class ServiceCardPermissionService
     private function isAffectedToService(Utilisateurs $utilisateur, Services $service): bool
     {
         $affectations = $this->entityManager
-            ->getRepository('App:Personnel\AffectationsUtilisateurs')
+            ->getRepository(AffectationsUtilisateurs::class)
             ->findBy([
                 'utilisateurId' => $utilisateur,
                 'serviceId' => $service,
@@ -250,7 +251,7 @@ class ServiceCardPermissionService
     public function getAffectedServices(Utilisateurs $utilisateur): array
     {
         $affectationsRepository = $this->entityManager
-            ->getRepository('App:Personnel\AffectationsUtilisateurs');
+            ->getRepository(AffectationsUtilisateurs::class);
 
         $affectations = $affectationsRepository->findBy([
             'utilisateurId' => $utilisateur,
