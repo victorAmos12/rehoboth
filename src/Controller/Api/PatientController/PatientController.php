@@ -257,7 +257,7 @@ class PatientController extends AbstractController
             $data = json_decode($request->getContent(), true);
 
             // Valider les données requises
-            $requiredFields = ['numeroDossier', 'nom', 'prenom', 'dateNaissance', 'hopital_id'];
+            $requiredFields = ['nom', 'prenom', 'dateNaissance', 'hopital_id'];
             foreach ($requiredFields as $field) {
                 if (!isset($data[$field]) || empty($data[$field])) {
                     return $this->json([
@@ -268,15 +268,16 @@ class PatientController extends AbstractController
             }
 
             // Vérifier que le numéro de dossier est unique
-            $existingPatient = $this->entityManager->getRepository(Patients::class)
-                ->findOneBy(['numeroDossier' => $data['numeroDossier']]);
+            // $existingPatient = $this->entityManager->getRepository(Patients::class)
+            //     ->findOneBy(['numeroDossier' => $data['numeroDossier']]);
 
-            if ($existingPatient) {
-                return $this->json([
-                    'success' => false,
-                    'error' => 'Un patient avec ce numéro de dossier existe déjà',
-                ], 409);
-            }
+            // if ($existingPatient) {
+            //     return $this->json([
+            //         'success' => false,
+            //         'error' => 'Un patient avec ce numéro de dossier existe déjà',
+            //     ], 409);
+            // }
+
 
             // Récupérer l'hôpital
             $hopital = $this->entityManager->getRepository(Hopitaux::class)
@@ -287,6 +288,17 @@ class PatientController extends AbstractController
                     'success' => false,
                     'error' => 'Hôpital non trouvé',
                 ], 404);
+            }
+
+            // Créer un numéro de dossier unique si non fourni
+            if (empty($data['numeroDossier'])) {
+
+                // Compter le nombre de patienrs existants pour générer un numéro unique
+                $count = $this->entityManager->getRepository(Patients::class)->count([]);
+
+                $data['numeroDossier'] = 'PAT-' .  date('Y') . '-' . str_pad(
+                    $count+1, 6, '0', STR_PAD_LEFT
+                );
             }
 
             // Créer le patient

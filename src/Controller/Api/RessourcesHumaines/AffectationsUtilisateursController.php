@@ -686,6 +686,75 @@ class AffectationsUtilisateursController extends AbstractController
     }
 
     /**
+     * Récupère les pôles d'affectation d'un utilisateur
+     * GET /api/affectations/utilisateur/{utilisateurId}/poles
+     * 
+     * Retourne les pôles via les services affectés de l'utilisateur
+     */
+    #[Route('/utilisateur/{utilisateurId}/poles', name: 'user_poles', methods: ['GET'])]
+    public function getUserPoles(int $utilisateurId, Request $request): JsonResponse
+    {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($utilisateurId);
+
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            // Récupérer les affectations de l'utilisateur
+            $affectations = $this->entityManager->getRepository(AffectationsUtilisateurs::class)
+                ->createQueryBuilder('a')
+                ->leftJoin('a.serviceId', 's')
+                ->leftJoin('s.poleId', 'p')
+                ->addSelect('s', 'p')
+                ->where('a.utilisateurId = :utilisateur')
+                ->andWhere('a.actif = true')
+                ->setParameter('utilisateur', $utilisateur)
+                ->getQuery()
+                ->getResult();
+
+            // Extraire les pôles uniques
+            $poles = [];
+            $polesIds = [];
+            
+            foreach ($affectations as $affectation) {
+                $service = $affectation->getServiceId();
+                if ($service && $service->getPoleId()) {
+                    $pole = $service->getPoleId();
+                    $poleId = $pole->getId();
+                    
+                    if (!in_array($poleId, $polesIds)) {
+                        $polesIds[] = $poleId;
+                        $poles[] = [
+                            'id' => $pole->getId(),
+                            'nom' => $pole->getNom(),
+                            'code' => $pole->getCode(),
+                            'description' => $pole->getDescription(),
+                            'type_pole' => $pole->getTypePole(),
+                            'actif' => $pole->getActif(),
+                        ];
+                    }
+                }
+            }
+
+            return $this->json([
+                'success' => true,
+                'data' => $poles,
+                'total' => count($poles),
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des pôles: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Formate les données d'une affectation pour la réponse JSON
      */
     private function formatAffectationData(AffectationsUtilisateurs $affectation, bool $detailed = false): array
@@ -717,3 +786,4 @@ class AffectationsUtilisateursController extends AbstractController
         return $data;
     }
 }
+

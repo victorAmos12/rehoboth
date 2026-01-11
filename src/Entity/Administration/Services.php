@@ -60,9 +60,29 @@ class Services
     #[ORM\Column(type: 'datetime', precision: 10, nullable: true)]
     private ?\DateTimeInterface $dateCreation = null;
 
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, nullable: true)]
+    private ?string $budgetAnnuel = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $nombrePersonnel = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $horairesOuverture = null;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $niveauAccreditation = null;
+
     #[ORM\ManyToOne(targetEntity: Hopitaux::class)]
     #[ORM\JoinColumn(name: 'hopital_id', referencedColumnName: 'id', nullable: false)]
     private Hopitaux $hopitalId;
+
+    #[ORM\ManyToOne(targetEntity: 'App\Entity\Administration\PolesActivite', inversedBy: 'services')]
+    #[ORM\JoinColumn(name: 'pole_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?PolesActivite $poleId = null;
+
+    #[ORM\ManyToOne(targetEntity: TypesServices::class, inversedBy: 'services')]
+    #[ORM\JoinColumn(name: 'type_service_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?TypesServices $typeServiceId = null;
 
     public function __construct()
     {
@@ -232,6 +252,72 @@ class Services
     public function isActif(): ?bool
     {
         return $this->actif;
+    }
+
+    public function getBudgetAnnuel(): ?string
+    {
+        return $this->budgetAnnuel;
+    }
+
+    public function setBudgetAnnuel(?string $budgetAnnuel): static
+    {
+        $this->budgetAnnuel = $budgetAnnuel;
+        return $this;
+    }
+
+    public function getNombrePersonnel(): ?int
+    {
+        return $this->nombrePersonnel;
+    }
+
+    public function setNombrePersonnel(?int $nombrePersonnel): static
+    {
+        $this->nombrePersonnel = $nombrePersonnel;
+        return $this;
+    }
+
+    public function getHorairesOuverture(): ?string
+    {
+        return $this->horairesOuverture;
+    }
+
+    public function setHorairesOuverture(?string $horairesOuverture): static
+    {
+        $this->horairesOuverture = $horairesOuverture;
+        return $this;
+    }
+
+    public function getNiveauAccreditation(): ?string
+    {
+        return $this->niveauAccreditation;
+    }
+
+    public function setNiveauAccreditation(?string $niveauAccreditation): static
+    {
+        $this->niveauAccreditation = $niveauAccreditation;
+        return $this;
+    }
+
+    public function getPoleId(): ?PolesActivite
+    {
+        return $this->poleId;
+    }
+
+    public function setPoleId(?PolesActivite $poleId): static
+    {
+        $this->poleId = $poleId;
+        return $this;
+    }
+
+    public function getTypeServiceId(): ?TypesServices
+    {
+        return $this->typeServiceId;
+    }
+
+    public function setTypeServiceId(?TypesServices $typeServiceId): static
+    {
+        $this->typeServiceId = $typeServiceId;
+        return $this;
     }
 
 }

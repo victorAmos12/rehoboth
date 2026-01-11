@@ -2367,6 +2367,320 @@ class UtilisateursControllers extends AbstractController
     }
 
     /**
+     * Génère une carte de service au format PDF
+     * GET /api/utilisateurs/{userId}/service-cards/{serviceId}/pdf
+     * 
+     * Génère une carte professionnelle pour un service spécifique
+     * Le niveau de détail dépend des permissions de l'utilisateur
+     */
+    #[Route('/{userId}/service-cards/{serviceId}/pdf', name: 'service_card_pdf', methods: ['GET'])]
+    public function generateServiceCardPdf(
+        int $userId,
+        int $serviceId,
+        \App\Service\ServiceCardGeneratorService $cardGenerator
+    ): Response|JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $service = $this->entityManager->getRepository(Services::class)->find($serviceId);
+            if (!$service) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Service non trouvé',
+                ], 404);
+            }
+
+            $pdfContent = $cardGenerator->generateServiceCardPdf($service, $utilisateur);
+
+            $response = new Response($pdfContent);
+            $response->headers->set('Content-Type', 'application/pdf');
+            $response->headers->set(
+                'Content-Disposition',
+                'attachment; filename="carte_service_' . $service->getCode() . '_' . date('Y-m-d_H-i-s') . '.pdf"'
+            );
+
+            return $response;
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la génération de la carte: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Génère une carte de service au format image
+     * GET /api/utilisateurs/{userId}/service-cards/{serviceId}/image
+     * 
+     * Paramètres de requête:
+     * - format: 'png' (défaut) ou 'jpg'
+     */
+    #[Route('/{userId}/service-cards/{serviceId}/image', name: 'service_card_image', methods: ['GET'])]
+    public function generateServiceCardImage(
+        int $userId,
+        int $serviceId,
+        Request $request,
+        \App\Service\ServiceCardGeneratorService $cardGenerator
+    ): Response|JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $service = $this->entityManager->getRepository(Services::class)->find($serviceId);
+            if (!$service) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Service non trouvé',
+                ], 404);
+            }
+
+            $format = $request->query->get('format', 'png');
+            if (!in_array($format, ['png', 'jpg'])) {
+                $format = 'png';
+            }
+
+            $imageContent = $cardGenerator->generateServiceCardImage($service, $utilisateur, $format);
+
+            $response = new Response($imageContent);
+            $response->headers->set('Content-Type', 'image/' . $format);
+            $response->headers->set(
+                'Content-Disposition',
+                'attachment; filename="carte_service_' . $service->getCode() . '.' . $format . '"'
+            );
+
+            return $response;
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la génération de l\'image: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Génère une carte de service au format HTML (aperçu)
+     * GET /api/utilisateurs/{userId}/service-cards/{serviceId}/preview
+     */
+    #[Route('/{userId}/service-cards/{serviceId}/preview', name: 'service_card_preview', methods: ['GET'])]
+    public function generateServiceCardPreview(
+        int $userId,
+        int $serviceId,
+        \App\Service\ServiceCardGeneratorService $cardGenerator
+    ): Response|JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $service = $this->entityManager->getRepository(Services::class)->find($serviceId);
+            if (!$service) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Service non trouvé',
+                ], 404);
+            }
+
+            $htmlContent = $cardGenerator->generateServiceCardHtml($service, $utilisateur);
+
+            $response = new Response($htmlContent);
+            $response->headers->set('Content-Type', 'text/html; charset=utf-8');
+
+            return $response;
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la génération de l\'aperçu: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Génère plusieurs cartes de services en un seul PDF
+     * POST /api/utilisateurs/{userId}/service-cards/pdf-multiple
+     * 
+     * Body:
+     * - service_ids: array d'IDs de services (optionnel, sinon tous les services accessibles)
+     */
+    #[Route('/{userId}/service-cards/pdf-multiple', name: 'service_cards_pdf_multiple', methods: ['POST'])]
+    public function generateMultipleServiceCardsPdf(
+        int $userId,
+        Request $request,
+        \App\Service\ServiceCardGeneratorService $cardGenerator,
+        \App\Service\ServiceCardPermissionService $permissionService
+    ): Response|JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true) ?? [];
+            $serviceIds = $data['service_ids'] ?? [];
+
+            // Récupérer les services
+            $services = [];
+            if (!empty($serviceIds)) {
+                // Services spécifiés
+                foreach ($serviceIds as $serviceId) {
+                    $service = $this->entityManager->getRepository(Services::class)->find($serviceId);
+                    if ($service) {
+                        $services[] = $service;
+                    }
+                }
+            } else {
+                // Tous les services accessibles
+                $services = $permissionService->getAccessibleServices($utilisateur);
+            }
+
+            if (empty($services)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Aucun service accessible',
+                ], 403);
+            }
+
+            $pdfContent = $cardGenerator->generateMultipleServiceCardsPdf($services, $utilisateur);
+
+            $response = new Response($pdfContent);
+            $response->headers->set('Content-Type', 'application/pdf');
+            $response->headers->set(
+                'Content-Disposition',
+                'attachment; filename="cartes_services_' . date('Y-m-d_H-i-s') . '.pdf"'
+            );
+
+            return $response;
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la génération des cartes: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les services accessibles par un utilisateur
+     * GET /api/utilisateurs/{userId}/accessible-services
+     */
+    #[Route('/{userId}/accessible-services', name: 'accessible_services', methods: ['GET'])]
+    public function getAccessibleServices(
+        int $userId,
+        \App\Service\ServiceCardPermissionService $permissionService
+    ): JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $services = $permissionService->getAccessibleServices($utilisateur);
+
+            $data = array_map(function (Services $service) use ($utilisateur, $permissionService) {
+                $detailLevel = $permissionService->getDetailLevel($utilisateur, $service);
+                return [
+                    'id' => $service->getId(),
+                    'code' => $service->getCode(),
+                    'nom' => $service->getNom(),
+                    'typeService' => $service->getTypeService(),
+                    'hopital' => $service->getHopitalId()->getNom(),
+                    'couleur' => $service->getCouleurService() ?? '#2980B9',
+                    'actif' => $service->getActif(),
+                    'detailLevel' => $detailLevel,
+                    'detailLevelName' => match($detailLevel) {
+                        0 => 'Aucun accès',
+                        1 => 'Basique',
+                        2 => 'Intermédiaire',
+                        3 => 'Complet',
+                        default => 'Inconnu'
+                    },
+                ];
+            }, $services);
+
+            return $this->json([
+                'success' => true,
+                'data' => $data,
+                'total' => count($data),
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des services: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère les services affectés à un utilisateur
+     * GET /api/utilisateurs/{userId}/affected-services
+     */
+    #[Route('/{userId}/affected-services', name: 'affected_services', methods: ['GET'])]
+    public function getAffectedServices(
+        int $userId,
+        \App\Service\ServiceCardPermissionService $permissionService
+    ): JsonResponse {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            $services = $permissionService->getAffectedServices($utilisateur);
+
+            $data = array_map(function (Services $service) {
+                return [
+                    'id' => $service->getId(),
+                    'code' => $service->getCode(),
+                    'nom' => $service->getNom(),
+                    'typeService' => $service->getTypeService(),
+                    'hopital' => $service->getHopitalId()->getNom(),
+                    'couleur' => $service->getCouleurService() ?? '#2980B9',
+                    'actif' => $service->getActif(),
+                ];
+            }, $services);
+
+            return $this->json([
+                'success' => true,
+                'data' => $data,
+                'total' => count($data),
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des services: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Génère un secret TOTP (Time-based One-Time Password) pour la 2FA
      * Utilise l'algorithme RFC 4648 Base32
      */

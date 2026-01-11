@@ -15,6 +15,7 @@ use DateTimeImmutable;
 #[ORM\Table(name: 'lits', indexes: [
         new ORM\Index(name: 'idx_hopital', columns: ["hopital_id"]),
         new ORM\Index(name: 'idx_service', columns: ["service_id"]),
+        new ORM\Index(name: 'idx_chambre', columns: ["chambre_id"]),
         new ORM\Index(name: 'idx_statut', columns: ["statut"])
     ])]
 class Lits
@@ -34,9 +35,6 @@ class Lits
     private ?int $etage = null;
 
     #[ORM\Column(type: 'string', length: 50, precision: 10, nullable: true)]
-    private ?string $chambre = null;
-
-    #[ORM\Column(type: 'string', length: 50, precision: 10, nullable: true)]
     private ?string $statut = null;
 
     #[ORM\Column(type: 'date', precision: 10, nullable: true)]
@@ -52,6 +50,10 @@ class Lits
     #[ORM\ManyToOne(targetEntity: Hopitaux::class)]
     #[ORM\JoinColumn(name: 'hopital_id', referencedColumnName: 'id', nullable: false)]
     private Hopitaux $hopitalId;
+
+    #[ORM\ManyToOne(targetEntity: Chambres::class, inversedBy: 'lits')]
+    #[ORM\JoinColumn(name: 'chambre_id', referencedColumnName: 'id', nullable: false)]
+    private Chambres $chambreId;
 
     public function __construct()
     {
@@ -93,17 +95,6 @@ class Lits
     public function setEtage(?int $etage): static
     {
         $this->etage = $etage;
-        return $this;
-    }
-
-    public function getChambre(): ?string
-    {
-        return $this->chambre;
-    }
-
-    public function setChambre(?string $chambre): static
-    {
-        $this->chambre = $chambre;
         return $this;
     }
 
@@ -162,4 +153,14 @@ class Lits
         return $this;
     }
 
+    public function getChambreId(): Chambres
+    {
+        return $this->chambreId;
+    }
+
+    public function setChambreId(Chambres $chambreId): static
+    {
+        $this->chambreId = $chambreId;
+        return $this;
+    }
 }

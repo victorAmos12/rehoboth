@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu - Carte de Service {{ service.nom }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card-wrapper {
+            perspective: 1000px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, {{ service.couleur }} 0%, #1a5276 100%);
+            color: white;
+            padding: 50px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: drift 20s linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .card-header-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .card-logo {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            font-weight: bold;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+        }
+
+        .card-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .card-header-text h1 {
+            font-size: 36px;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header-text p {
+            font-size: 14px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-body {
+            padding: 50px 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: {{ service.couleur }};
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid {{ service.couleur }};
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .info-value.highlight {
+            color: {{ service.couleur }};
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .card-footer {
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            padding: 25px 40px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-item {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .footer-item strong {
+            color: #2c3e50;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: {{ service.couleur }};
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .detail-level-0 .section:nth-child(n+2) {
+            display: none;
+        }
+
+        .detail-level-1 .section:nth-child(n+3) {
+            display: none;
+        }
+
+        .detail-level-1 .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-level-2 .section:nth-child(n+4) {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .card-header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+            <h1>Aperçu de la Carte de Service</h1>
+            <p>Rehoboth Hospital Management System</p>
+        </div>
+
+        <!-- Carte -->
+        <div class="card-wrapper">
+            <div class="card detail-level-{{ detailLevel }}">
+                <!-- En-tête -->
+                <div class="card-header">
+                    <div class="card-header-content">
+                        {% if service.logo %}
+                            <div class="card-logo">
+                                <img src="{{ service.logo }}" alt="Logo">
+                            </div>
+                        {% else %}
+                            <div class="card-logo">{{ service.code|first }}</div>
+                        {% endif %}
+                        <div class="card-header-text">
+                            <h1>{{ service.nom }}</h1>
+                            <p>{{ service.typeService ?? 'Service Hospitalier' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corps -->
+                <div class="card-body">
+                    <!-- Section Informations Générales -->
+                    <div class="section">
+                        <div class="section-title">Informations Générales</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Code Service</span>
+                                <span class="info-value highlight">{{ service.code }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Hôpital</span>
+                                <span class="info-value">{{ service.hopital }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Type de Service</span>
+                                <span class="info-value">{{ service.typeService ?? 'N/A' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Statut</span>
+                                <span class="info-value">
+                                    {% if service.actif %}
+                                        <span class="badge badge-active">Actif</span>
+                                    {% else %}
+                                        <span class="badge badge-inactive">Inactif</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Détails (niveau basique et plus) -->
+                    {% if detailLevel >= 1 %}
+                    <div class="section">
+                        <div class="section-title">Détails du Service</div>
+                        <div class="info-grid">
+                            {% if service.description %}
+                            <div class="info-item">
+                                <span class="info-label">Description</span>
+                                <span class="info-value">{{ service.description }}</span>
+                            </div>
+                            {% endif %}
+                            {% if service.localisation %}
+                            <div class="info-item">
+                                <span class="info-label">Localisation</span>
+                                <span class="info-value">{{ service.localisation }}</span>
+                            </div>
+                            {% endif %}
+                            {% if service.telephone %}
+                            <div class="info-item">
+                                <span class="info-label">Téléphone</span>
+                                <span class="info-value">{{ service.telephone }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section Ressources (niveau intermédiaire et plus) -->
+                    {% if detailLevel >= 2 %}
+                    <div class="section">
+                        <div class="section-title">Ressources</div>
+                        <div class="info-grid">
+                            {% if service.nombreLits %}
+                            <div class="info-item">
+                                <span class="info-label">Nombre de Lits</span>
+                                <span class="info-value highlight">{{ service.nombreLits }}</span>
+                            </div>
+                            {% endif %}
+                            {% if service.email %}
+                            <div class="info-item">
+                                <span class="info-label">Email</span>
+                                <span class="info-value">{{ service.email }}</span>
+                            </div>
+                            {% endif %}
+                            {% if service.chefServiceId %}
+                            <div class="info-item">
+                                <span class="info-label">Chef de Service</span>
+                                <span class="info-value">ID: {{ service.chefServiceId }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Section Administration (niveau complet) -->
+                    {% if detailLevel >= 3 %}
+                    <div class="section">
+                        <div class="section-title">Administration</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">ID Service</span>
+                                <span class="info-value">{{ service.id }}</span>
+                            </div>
+                            {% if service.dateCreation %}
+                            <div class="info-item">
+                                <span class="info-label">Créé le</span>
+                                <span class="info-value">{{ service.dateCreation|date('d/m/Y H:i') }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="info-item">
+                                <span class="info-label">Hôpital ID</span>
+                                <span class="info-value">{{ service.hopitalId }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pied de page -->
+                <div class="card-footer">
+                    <div class="footer-item">
+                        <strong>Généré par:</strong> {{ user.prenom }} {{ user.nom }}
+                    </div>
+                    <div class="footer-item">
+                        <strong>Rôle:</strong> {{ user.role }}
+                    </div>
+                    <div class="footer-item">
+                        <strong>Date:</strong> {{ generatedAt|date('d/m/Y à H:i:s') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-primary" onclick="window.print()">Imprimer / Exporter en PDF</button>
+            <button class="btn btn-secondary" onclick="window.history.back()">Retour</button>
+        </div>
+    </div>
+</body>
+</html>

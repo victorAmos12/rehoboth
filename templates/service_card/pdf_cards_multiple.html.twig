@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartes de Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .document-header {
+            background: linear-gradient(135deg, #2980B9 0%, #1a5276 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .document-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .document-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .document-meta {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .cards-container {
+            padding: 20px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--card-color) 0%, #1a5276 100%);
+            color: white;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .card-header-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .card-logo {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .card-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .card-header-text h2 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .card-header-text p {
+            font-size: 12px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .info-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--card-color);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .card-footer {
+            background: #f8f9fa;
+            padding: 15px 25px;
+            border-top: 1px solid #e9ecef;
+            font-size: 11px;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-level-0 {
+            display: none;
+        }
+
+        .detail-level-1 .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-level-1 .info-column:nth-child(n+2) {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .service-card {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+
+            .document-header {
+                page-break-after: avoid;
+            }
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+    </style>
+</head>
+<body>
+    <!-- En-tête du document -->
+    <div class="document-header">
+        <h1 class="document-title">Cartes de Services</h1>
+        <p class="document-subtitle">Rehoboth Hospital Management System</p>
+        <div class="document-meta">
+            <strong>Généré par:</strong> {{ user.prenom }} {{ user.nom }} ({{ user.role }})<br>
+            <strong>Date:</strong> {{ generatedAt|date('d/m/Y à H:i:s') }}<br>
+            <strong>Total:</strong> {{ services|length }} service(s)
+        </div>
+    </div>
+
+    <!-- Cartes des services -->
+    <div class="cards-container">
+        {% for serviceData in services %}
+        <div class="service-card detail-level-{{ serviceData.detailLevel }}" style="--card-color: {{ serviceData.service.couleur }}">
+            <!-- En-tête de la carte -->
+            <div class="card-header">
+                <div class="card-header-content">
+                    {% if serviceData.service.logo %}
+                        <div class="card-logo">
+                            <img src="{{ serviceData.service.logo }}" alt="Logo">
+                        </div>
+                    {% else %}
+                        <div class="card-logo">{{ serviceData.service.code|first }}</div>
+                    {% endif %}
+                    <div class="card-header-text">
+                        <h2>{{ serviceData.service.nom }}</h2>
+                        <p>{{ serviceData.service.typeService ?? 'Service Hospitalier' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Corps de la carte -->
+            <div class="card-body">
+                <div class="info-grid">
+                    <!-- Colonne 1 -->
+                    <div class="info-column">
+                        <div class="info-item">
+                            <span class="info-label">Code Service</span>
+                            <span class="info-value" style="color: {{ serviceData.service.couleur }}; font-weight: 600;">{{ serviceData.service.code }}</span>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-label">Hôpital</span>
+                            <span class="info-value">{{ serviceData.service.hopital }}</span>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-label">Statut</span>
+                            <span class="info-value">
+                                {% if serviceData.service.actif %}
+                                    <span class="badge badge-active">Actif</span>
+                                {% else %}
+                                    <span class="badge badge-inactive">Inactif</span>
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        {% if serviceData.detailLevel >= 1 %}
+                        {% if serviceData.service.localisation %}
+                        <div class="info-item">
+                            <span class="info-label">Localisation</span>
+                            <span class="info-value">{{ serviceData.service.localisation }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if serviceData.service.telephone %}
+                        <div class="info-item">
+                            <span class="info-label">Téléphone</span>
+                            <span class="info-value">{{ serviceData.service.telephone }}</span>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Colonne 2 -->
+                    {% if serviceData.detailLevel >= 2 %}
+                    <div class="info-column">
+                        {% if serviceData.service.nombreLits %}
+                        <div class="info-item">
+                            <span class="info-label">Nombre de Lits</span>
+                            <span class="info-value" style="color: {{ serviceData.service.couleur }}; font-weight: 600;">{{ serviceData.service.nombreLits }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if serviceData.service.email %}
+                        <div class="info-item">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">{{ serviceData.service.email }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if serviceData.service.description %}
+                        <div class="info-item">
+                            <span class="info-label">Description</span>
+                            <span class="info-value">{{ serviceData.service.description|truncate(100) }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if serviceData.service.chefServiceId %}
+                        <div class="info-item">
+                            <span class="info-label">Chef de Service</span>
+                            <span class="info-value">ID: {{ serviceData.service.chefServiceId }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pied de page de la carte -->
+            <div class="card-footer">
+                <span>Service ID: {{ serviceData.service.id }}</span>
+                <span>Généré le {{ serviceData.generatedAt|date('d/m/Y H:i') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
