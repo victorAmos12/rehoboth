@@ -102,13 +102,13 @@ class UtilisateursControllers extends AbstractController
             if (!empty($search)) {
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->like('u.nom', ':search'),
-                        $queryBuilder->expr()->like('u.prenom', ':search'),
-                        $queryBuilder->expr()->like('u.email', ':search'),
-                        $queryBuilder->expr()->like('u.login', ':search')
+                        $queryBuilder->expr()->like('LOWER(u.nom)', ':search'),
+                        $queryBuilder->expr()->like('LOWER(u.prenom)', ':search'),
+                        $queryBuilder->expr()->like('LOWER(u.email)', ':search'),
+                        $queryBuilder->expr()->like('LOWER(u.login)', ':search')
                     )
                 )
-                ->setParameter('search', '%' . $search . '%');
+                ->setParameter('search', '%' . strtolower($search) . '%');
             }
 
             if ($hopitalId) {
@@ -136,9 +136,9 @@ class UtilisateursControllers extends AbstractController
                     ->setParameter('actif', filter_var($actif, FILTER_VALIDATE_BOOLEAN));
             }
 
-            // Compter le total
-            $countQuery = clone $queryBuilder;
-            $total = count($countQuery->getQuery()->getResult());
+            // Compter le total AVANT la pagination
+            $countQueryBuilder = clone $queryBuilder;
+            $total = count($countQueryBuilder->getQuery()->getResult());
 
             // Appliquer le tri et la pagination
             $queryBuilder->orderBy('u.' . $sort, $order)
@@ -162,6 +162,7 @@ class UtilisateursControllers extends AbstractController
                     'total' => $total,
                     'pages' => $pages,
                 ],
+                'search' => $search,
             ], 200);
 
         } catch (Exception $e) {
@@ -297,22 +298,50 @@ class UtilisateursControllers extends AbstractController
      * Champs requis:
      * - nom, prenom, email, login, motDePasse
      * - hopital_id, role_id, profil_id
+     * 
+     * Support des deux formats (camelCase et snake_case)
      */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true);
+            $rawContent = $request->getContent();
+            $data = json_decode($rawContent, true);
 
-            // Valider les champs requis
-            $requiredFields = ['nom', 'prenom', 'email', 'login', 'motDePasse', 'hopital_id', 'role_id', 'profil_id'];
+            // Débogage : retourner les données reçues
+            if (!is_array($data)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Les données doivent être au format JSON',
+                    'raw_content' => $rawContent,
+                    'json_error' => json_last_error_msg(),
+                ], 400);
+            }
+
+            // Valider les champs requis - Support des deux formats pour le mot de passe
+            $motDePasse = $data['motDePasse'] ?? $data['mot_de_passe'] ?? null;
+            
+            $requiredFields = ['nom', 'prenom', 'email', 'login', 'hopital_id', 'role_id', 'profil_id'];
+            $missingFields = [];
+            
             foreach ($requiredFields as $field) {
-                if (!isset($data[$field]) || empty($data[$field])) {
-                    return $this->json([
-                        'success' => false,
-                        'error' => "Le champ '$field' est requis",
-                    ], 400);
+                if (!isset($data[$field]) || $data[$field] === '') {
+                    $missingFields[] = $field;
                 }
+            }
+            
+            if (!$motDePasse) {
+                $missingFields[] = 'motDePasse (ou mot_de_passe)';
+            }
+            
+            if (!empty($missingFields)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Champs requis manquants: ' . implode(', ', $missingFields),
+                    'received_fields' => array_keys($data),
+                    'received_data' => $data,
+                    'missing_fields' => $missingFields,
+                ], 400);
             }
 
             // Vérifier l'unicité du login et email
@@ -370,38 +399,107 @@ class UtilisateursControllers extends AbstractController
             $utilisateur->setLogin($data['login']);
             
             // Hasher le mot de passe
-            $hashedPassword = $this->passwordHasher->hashPassword($utilisateur, $data['motDePasse']);
+            $hashedPassword = $this->passwordHasher->hashPassword($utilisateur, $motDePasse);
             $utilisateur->setMotDePasse($hashedPassword);
             
             $utilisateur->setHopitalId($hopital);
             $utilisateur->setRoleId($role);
             $utilisateur->setProfilId($profil);
 
-            // Champs optionnels
+            // Champs optionnels - Support des deux formats (camelCase et snake_case)
             if (isset($data['telephone'])) $utilisateur->setTelephone($data['telephone']);
+            
+            // Numéro de licence
             if (isset($data['numeroLicence'])) $utilisateur->setNumeroLicence($data['numeroLicence']);
+            if (isset($data['numero_licence'])) $utilisateur->setNumeroLicence($data['numero_licence']);
+            
+            // Numéro d'ordre
             if (isset($data['numeroOrdre'])) $utilisateur->setNumeroOrdre($data['numeroOrdre']);
-            if (isset($data['dateEmbauche'])) $utilisateur->setDateEmbauche(new \DateTime($data['dateEmbauche']));
+            if (isset($data['numero_ordre'])) $utilisateur->setNumeroOrdre($data['numero_ordre']);
+            
+            // Date d'embauche
+            if (isset($data['dateEmbauche'])) {
+                try {
+                    $utilisateur->setDateEmbauche(new \DateTime($data['dateEmbauche']));
+                } catch (\Exception $e) {
+                    // Ignorer les dates invalides
+                }
+            }
+            if (isset($data['date_embauche'])) {
+                try {
+                    $utilisateur->setDateEmbauche(new \DateTime($data['date_embauche']));
+                } catch (\Exception $e) {
+                    // Ignorer les dates invalides
+                }
+            }
+            
+            // Photo de profil
             if (isset($data['photoProfil'])) $utilisateur->setPhotoProfil($data['photoProfil']);
+            if (isset($data['photo_profil'])) $utilisateur->setPhotoProfil($data['photo_profil']);
+            
+            // Signature numérique
             if (isset($data['signatureNumerique'])) $utilisateur->setSignatureNumerique($data['signatureNumerique']);
+            if (isset($data['signature_numerique'])) $utilisateur->setSignatureNumerique($data['signature_numerique']);
+            
             if (isset($data['bio'])) $utilisateur->setBio($data['bio']);
             if (isset($data['adresse'])) $utilisateur->setAdresse($data['adresse']);
             if (isset($data['ville'])) $utilisateur->setVille($data['ville']);
+            
+            // Code postal
             if (isset($data['codePostal'])) $utilisateur->setCodePostal($data['codePostal']);
-            if (isset($data['dateNaissance'])) $utilisateur->setDateNaissance(new \DateTime($data['dateNaissance']));
+            if (isset($data['code_postal'])) $utilisateur->setCodePostal($data['code_postal']);
+            
+            // Date de naissance
+            if (isset($data['dateNaissance'])) {
+                try {
+                    $utilisateur->setDateNaissance(new \DateTime($data['dateNaissance']));
+                } catch (\Exception $e) {
+                    // Ignorer les dates invalides
+                }
+            }
+            if (isset($data['date_naissance'])) {
+                try {
+                    $utilisateur->setDateNaissance(new \DateTime($data['date_naissance']));
+                } catch (\Exception $e) {
+                    // Ignorer les dates invalides
+                }
+            }
+            
             if (isset($data['sexe'])) $utilisateur->setSexe($data['sexe']);
             if (isset($data['nationalite'])) $utilisateur->setNationalite($data['nationalite']);
+            
+            // Numéro d'identité
             if (isset($data['numeroIdentite'])) $utilisateur->setNumeroIdentite($data['numeroIdentite']);
+            if (isset($data['numero_identite'])) $utilisateur->setNumeroIdentite($data['numero_identite']);
+            
+            // Type d'identité
             if (isset($data['typeIdentite'])) $utilisateur->setTypeIdentite($data['typeIdentite']);
+            if (isset($data['type_identite'])) $utilisateur->setTypeIdentite($data['type_identite']);
+            
+            // Téléphone d'urgence
             if (isset($data['telephoneUrgence'])) $utilisateur->setTelephoneUrgence($data['telephoneUrgence']);
+            if (isset($data['telephone_urgence'])) $utilisateur->setTelephoneUrgence($data['telephone_urgence']);
+            
+            // Contact d'urgence
             if (isset($data['contactUrgenceNom'])) $utilisateur->setContactUrgenceNom($data['contactUrgenceNom']);
-            if (isset($data['specialite_id'])) {
+            if (isset($data['contact_urgence_nom'])) $utilisateur->setContactUrgenceNom($data['contact_urgence_nom']);
+            
+            // Spécialité - Support des deux formats
+            if (isset($data['specialite_id']) && !empty($data['specialite_id'])) {
                 $specialite = $this->entityManager->getRepository(Specialites::class)
                     ->find($data['specialite_id']);
                 if ($specialite) {
                     $utilisateur->setSpecialiteId($specialite);
                 }
             }
+            if (isset($data['specialiteId']) && !empty($data['specialiteId'])) {
+                $specialite = $this->entityManager->getRepository(Specialites::class)
+                    ->find($data['specialiteId']);
+                if ($specialite) {
+                    $utilisateur->setSpecialiteId($specialite);
+                }
+            }
+            
             if (isset($data['authentification_2fa'])) $utilisateur->setAuthentification2fa($data['authentification_2fa']);
 
             // Valider l'entité
@@ -431,6 +529,7 @@ class UtilisateursControllers extends AbstractController
             return $this->json([
                 'success' => false,
                 'error' => 'Erreur lors de la création de l\'utilisateur: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
@@ -454,7 +553,7 @@ class UtilisateursControllers extends AbstractController
 
             $data = json_decode($request->getContent(), true);
 
-            // Mettre à jour les champs
+            // Mettre à jour les champs - Support des deux formats (camelCase et snake_case)
             if (isset($data['nom'])) $utilisateur->setNom($data['nom']);
             if (isset($data['prenom'])) $utilisateur->setPrenom($data['prenom']);
             if (isset($data['email'])) {
@@ -470,22 +569,56 @@ class UtilisateursControllers extends AbstractController
                 $utilisateur->setEmail($data['email']);
             }
             if (isset($data['telephone'])) $utilisateur->setTelephone($data['telephone']);
+            
+            // Numéro de licence - Support des deux formats
             if (isset($data['numeroLicence'])) $utilisateur->setNumeroLicence($data['numeroLicence']);
+            if (isset($data['numero_licence'])) $utilisateur->setNumeroLicence($data['numero_licence']);
+            
+            // Numéro d'ordre - Support des deux formats
             if (isset($data['numeroOrdre'])) $utilisateur->setNumeroOrdre($data['numeroOrdre']);
+            if (isset($data['numero_ordre'])) $utilisateur->setNumeroOrdre($data['numero_ordre']);
+            
+            // Date d'embauche - Support des deux formats
             if (isset($data['dateEmbauche'])) $utilisateur->setDateEmbauche(new \DateTime($data['dateEmbauche']));
+            if (isset($data['date_embauche'])) $utilisateur->setDateEmbauche(new \DateTime($data['date_embauche']));
+            
             if (isset($data['photoProfil'])) $utilisateur->setPhotoProfil($data['photoProfil']);
+            if (isset($data['photo_profil'])) $utilisateur->setPhotoProfil($data['photo_profil']);
+            
             if (isset($data['signatureNumerique'])) $utilisateur->setSignatureNumerique($data['signatureNumerique']);
+            if (isset($data['signature_numerique'])) $utilisateur->setSignatureNumerique($data['signature_numerique']);
+            
             if (isset($data['bio'])) $utilisateur->setBio($data['bio']);
             if (isset($data['adresse'])) $utilisateur->setAdresse($data['adresse']);
             if (isset($data['ville'])) $utilisateur->setVille($data['ville']);
+            
+            // Code postal - Support des deux formats
             if (isset($data['codePostal'])) $utilisateur->setCodePostal($data['codePostal']);
+            if (isset($data['code_postal'])) $utilisateur->setCodePostal($data['code_postal']);
+            
+            // Date de naissance - Support des deux formats
             if (isset($data['dateNaissance'])) $utilisateur->setDateNaissance(new \DateTime($data['dateNaissance']));
+            if (isset($data['date_naissance'])) $utilisateur->setDateNaissance(new \DateTime($data['date_naissance']));
+            
             if (isset($data['sexe'])) $utilisateur->setSexe($data['sexe']);
             if (isset($data['nationalite'])) $utilisateur->setNationalite($data['nationalite']);
+            
+            // Numéro d'identité - Support des deux formats
             if (isset($data['numeroIdentite'])) $utilisateur->setNumeroIdentite($data['numeroIdentite']);
+            if (isset($data['numero_identite'])) $utilisateur->setNumeroIdentite($data['numero_identite']);
+            
+            // Type d'identité - Support des deux formats
             if (isset($data['typeIdentite'])) $utilisateur->setTypeIdentite($data['typeIdentite']);
+            if (isset($data['type_identite'])) $utilisateur->setTypeIdentite($data['type_identite']);
+            
+            // Téléphone d'urgence - Support des deux formats
             if (isset($data['telephoneUrgence'])) $utilisateur->setTelephoneUrgence($data['telephoneUrgence']);
+            if (isset($data['telephone_urgence'])) $utilisateur->setTelephoneUrgence($data['telephone_urgence']);
+            
+            // Contact d'urgence - Support des deux formats
             if (isset($data['contactUrgenceNom'])) $utilisateur->setContactUrgenceNom($data['contactUrgenceNom']);
+            if (isset($data['contact_urgence_nom'])) $utilisateur->setContactUrgenceNom($data['contact_urgence_nom']);
+            
             if (isset($data['actif'])) $utilisateur->setActif($data['actif']);
             if (isset($data['authentification_2fa'])) $utilisateur->setAuthentification2fa($data['authentification_2fa']);
             
@@ -505,12 +638,24 @@ class UtilisateursControllers extends AbstractController
                 }
             }
             
+            // Spécialité - Support des deux formats
             if (isset($data['specialite_id'])) {
                 if ($data['specialite_id'] === null) {
                     $utilisateur->setSpecialiteId(null);
                 } else {
                     $specialite = $this->entityManager->getRepository(Specialites::class)
                         ->find($data['specialite_id']);
+                    if ($specialite) {
+                        $utilisateur->setSpecialiteId($specialite);
+                    }
+                }
+            }
+            if (isset($data['specialiteId'])) {
+                if ($data['specialiteId'] === null) {
+                    $utilisateur->setSpecialiteId(null);
+                } else {
+                    $specialite = $this->entityManager->getRepository(Specialites::class)
+                        ->find($data['specialiteId']);
                     if ($specialite) {
                         $utilisateur->setSpecialiteId($specialite);
                     }
@@ -581,6 +726,161 @@ class UtilisateursControllers extends AbstractController
                 'success' => false,
                 'error' => 'Erreur lors de la suppression de l\'utilisateur: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Met à jour le profil utilisateur avec upload de fichier (FormData)
+     * PUT /api/utilisateurs/{id}/profile
+     * 
+     * Accepte FormData avec:
+     * - Tous les champs utilisateur (nom, prenom, email, etc.)
+     * - photo_profil: fichier image
+     * - signature_numerique: fichier image
+     */
+    #[Route('/{id}/profile', name: 'update_profile', methods: ['PUT'])]
+    public function updateProfile(int $id, Request $request): JsonResponse
+    {
+        try {
+            $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($id);
+
+            if (!$utilisateur) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Utilisateur non trouvé',
+                ], 404);
+            }
+
+            // Créer le répertoire uploads s'il n'existe pas
+            $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profils';
+            if (!is_dir($uploadsDir)) {
+                mkdir($uploadsDir, 0755, true);
+            }
+
+            // Traiter les fichiers uploadés
+            $files = $request->files->all();
+            
+            // Photo de profil
+            if (isset($files['photo_profil']) && $files['photo_profil'] instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                $photoFile = $files['photo_profil'];
+                $photoName = $this->saveUploadedFile($photoFile, $uploadsDir, 'photo_');
+                if ($photoName) {
+                    // Supprimer l'ancienne photo si elle existe
+                    if ($utilisateur->getPhotoProfil()) {
+                        $oldPhoto = $uploadsDir . '/' . basename($utilisateur->getPhotoProfil());
+                        if (file_exists($oldPhoto)) {
+                            unlink($oldPhoto);
+                        }
+                    }
+                    $utilisateur->setPhotoProfil('/uploads/profils/' . $photoName);
+                }
+            }
+
+            // Signature numérique
+            if (isset($files['signature_numerique']) && $files['signature_numerique'] instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                $sigFile = $files['signature_numerique'];
+                $sigName = $this->saveUploadedFile($sigFile, $uploadsDir, 'signature_');
+                if ($sigName) {
+                    // Supprimer l'ancienne signature si elle existe
+                    if ($utilisateur->getSignatureNumerique()) {
+                        $oldSig = $uploadsDir . '/' . basename($utilisateur->getSignatureNumerique());
+                        if (file_exists($oldSig)) {
+                            unlink($oldSig);
+                        }
+                    }
+                    $utilisateur->setSignatureNumerique('/uploads/profils/' . $sigName);
+                }
+            }
+
+            // Traiter les champs de formulaire
+            $post = $request->request->all();
+
+            // Mettre à jour les champs - Support des deux formats (camelCase et snake_case)
+            if (isset($post['nom'])) $utilisateur->setNom($post['nom']);
+            if (isset($post['prenom'])) $utilisateur->setPrenom($post['prenom']);
+            if (isset($post['email'])) {
+                // Vérifier l'unicité
+                $existing = $this->entityManager->getRepository(Utilisateurs::class)
+                    ->findOneBy(['email' => $post['email']]);
+                if ($existing && $existing->getId() !== $id) {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Cet email est déjà utilisé',
+                    ], 409);
+                }
+                $utilisateur->setEmail($post['email']);
+            }
+            if (isset($post['telephone'])) $utilisateur->setTelephone($post['telephone']);
+            if (isset($post['bio'])) $utilisateur->setBio($post['bio']);
+            if (isset($post['adresse'])) $utilisateur->setAdresse($post['adresse']);
+            if (isset($post['ville'])) $utilisateur->setVille($post['ville']);
+            if (isset($post['codePostal'])) $utilisateur->setCodePostal($post['codePostal']);
+            if (isset($post['code_postal'])) $utilisateur->setCodePostal($post['code_postal']);
+            if (isset($post['sexe'])) $utilisateur->setSexe($post['sexe']);
+            if (isset($post['nationalite'])) $utilisateur->setNationalite($post['nationalite']);
+            if (isset($post['dateNaissance'])) $utilisateur->setDateNaissance(new \DateTime($post['dateNaissance']));
+            if (isset($post['date_naissance'])) $utilisateur->setDateNaissance(new \DateTime($post['date_naissance']));
+
+            $utilisateur->setDateModification(new DateTimeImmutable());
+
+            // Valider l'entité
+            $errors = $this->validator->validate($utilisateur);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Erreur de validation',
+                    'details' => $errorMessages,
+                ], 400);
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Profil utilisateur mis à jour avec succès',
+                'data' => $this->formatUtilisateurData($utilisateur),
+            ], 200);
+
+        } catch (Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la mise à jour du profil: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Sauvegarde un fichier uploadé
+     */
+    private function saveUploadedFile(\Symfony\Component\HttpFoundation\File\UploadedFile $file, string $directory, string $prefix = ''): ?string
+    {
+        try {
+            // Valider le type MIME
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($file->getMimeType(), $allowedMimes)) {
+                return null;
+            }
+
+            // Valider la taille (5 MB max)
+            if ($file->getSize() > 5 * 1024 * 1024) {
+                return null;
+            }
+
+            // Générer un nom unique
+            $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $safeFilename = preg_replace('/[^a-z0-9_-]/', '_', strtolower($originalFilename));
+            $newFilename = $prefix . uniqid() . '.' . $file->guessExtension();
+
+            // Déplacer le fichier
+            $file->move($directory, $newFilename);
+
+            return $newFilename;
+        } catch (Exception $e) {
+            return null;
         }
     }
 
