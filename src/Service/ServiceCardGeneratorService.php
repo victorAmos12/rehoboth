@@ -183,8 +183,8 @@ class ServiceCardGeneratorService
             $backBgPath  = ($options['back_bg_path'] ?? null) ?: '/PXL_20260111_142536686.jpg';
         }
 
-        // Photo profil: chemin relatif stocké en DB (/uploads/...), ou null
-        $photoPath = $utilisateur->getPhotoProfil();
+        // Photo profil: utiliser l'option si fournie, sinon utiliser la valeur de la DB
+        $photoPath = $options['photo_url'] ?? $utilisateur->getPhotoProfil();
 
         $data = [
             // Variables attendues par le template ISO
@@ -198,15 +198,15 @@ class ServiceCardGeneratorService
                 'telephone' => $utilisateur->getTelephone(),
             ],
             'hopital_nom' => $service->getHopitalId()->getNom(),
-            'hopital_logo' => $service->getHopitalId()->getLogoUrl(),
+            'hopital_logo' => $options['hopital_logo'] ?? $service->getHopitalId()->getLogoUrl(),
             'role_nom' => $utilisateur->getRoleId()->getNom(),
             'service_nom' => $service->getNom(),
             'service_color' => $service->getCouleurService() ?? '#2980B9',
             'specialite' => $utilisateur->getSpecialiteId() ? $utilisateur->getSpecialiteId()->getNom() : '',
             'nationalite' => $utilisateur->getNationalite() ?? '',
-            'adresse_physique' => $utilisateur->getAdressePhysique() ?? '',
+            'adresse_physique' => $utilisateur->getAdressePhysique() ?? 'Kinshasa, RDC',
             'date_livraison' => $utilisateur->getDateLivraison() ? $utilisateur->getDateLivraison()->format('d/m/Y') : date('d/m/Y'),
-            'validite' => $utilisateur->getValidite() ?? '1 an',
+            'validite' => $utilisateur->getValidite() ?? '31/12/2025',
 
             // Données existantes (compat)
             'service' => [

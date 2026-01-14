@@ -468,6 +468,29 @@ class UtilisateursControllers extends AbstractController
             if (isset($data['sexe'])) $utilisateur->setSexe($data['sexe']);
             if (isset($data['nationalite'])) $utilisateur->setNationalite($data['nationalite']);
             
+            // Adresse physique (pour la carte)
+            if (isset($data['adressePhysique'])) $utilisateur->setAdressePhysique($data['adressePhysique']);
+            if (isset($data['adresse_physique'])) $utilisateur->setAdressePhysique($data['adresse_physique']);
+
+            // Validité (pour la carte)
+            if (isset($data['validite'])) $utilisateur->setValidite($data['validite']);
+
+            // Date de livraison (pour la carte)
+            if (isset($data['dateLivraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($data['dateLivraison']));
+                } catch (\Exception $e) {
+                    // Ignorer
+                }
+            }
+            if (isset($data['date_livraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($data['date_livraison']));
+                } catch (\Exception $e) {
+                    // Ignorer
+                }
+            }
+            
             // Numéro d'identité
             if (isset($data['numeroIdentite'])) $utilisateur->setNumeroIdentite($data['numeroIdentite']);
             if (isset($data['numero_identite'])) $utilisateur->setNumeroIdentite($data['numero_identite']);
@@ -602,6 +625,29 @@ class UtilisateursControllers extends AbstractController
             
             if (isset($data['sexe'])) $utilisateur->setSexe($data['sexe']);
             if (isset($data['nationalite'])) $utilisateur->setNationalite($data['nationalite']);
+            
+            // Adresse physique (pour la carte)
+            if (isset($data['adressePhysique'])) $utilisateur->setAdressePhysique($data['adressePhysique']);
+            if (isset($data['adresse_physique'])) $utilisateur->setAdressePhysique($data['adresse_physique']);
+
+            // Validité (pour la carte)
+            if (isset($data['validite'])) $utilisateur->setValidite($data['validite']);
+
+            // Date de livraison (pour la carte)
+            if (isset($data['dateLivraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($data['dateLivraison']));
+                } catch (\Exception $e) {
+                    // Ignorer
+                }
+            }
+            if (isset($data['date_livraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($data['date_livraison']));
+                } catch (\Exception $e) {
+                    // Ignorer
+                }
+            }
             
             // Numéro d'identité - Support des deux formats
             if (isset($data['numeroIdentite'])) $utilisateur->setNumeroIdentite($data['numeroIdentite']);
@@ -868,6 +914,22 @@ class UtilisateursControllers extends AbstractController
             if (isset($post['nationalite'])) $utilisateur->setNationalite($post['nationalite']);
             if (isset($post['dateNaissance'])) $utilisateur->setDateNaissance(new \DateTime($post['dateNaissance']));
             if (isset($post['date_naissance'])) $utilisateur->setDateNaissance(new \DateTime($post['date_naissance']));
+            
+            // Champs carte de service
+            if (isset($post['adressePhysique'])) $utilisateur->setAdressePhysique($post['adressePhysique']);
+            if (isset($post['adresse_physique'])) $utilisateur->setAdressePhysique($post['adresse_physique']);
+            if (isset($post['validite'])) $utilisateur->setValidite($post['validite']);
+            
+            if (isset($post['dateLivraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($post['dateLivraison']));
+                } catch (\Exception $e) {}
+            }
+            if (isset($post['date_livraison'])) {
+                try {
+                    $utilisateur->setDateLivraison(new \DateTime($post['date_livraison']));
+                } catch (\Exception $e) {}
+            }
 
             $utilisateur->setDateModification(new DateTimeImmutable());
 
@@ -2703,6 +2765,9 @@ class UtilisateursControllers extends AbstractController
                 'dateNaissance' => $user->getDateNaissance()?->format('Y-m-d'),
                 'sexe' => $user->getSexe(),
                 'nationalite' => $user->getNationalite(),
+                'adressePhysique' => $user->getAdressePhysique(),
+                'dateLivraison' => $user->getDateLivraison()?->format('Y-m-d'),
+                'validite' => $user->getValidite(),
                 'numeroIdentite' => $user->getNumeroIdentite(),
                 'typeIdentite' => $user->getTypeIdentite(),
                 'telephoneUrgence' => $user->getTelephoneUrgence(),
@@ -2751,16 +2816,44 @@ class UtilisateursControllers extends AbstractController
                 ], 404);
             }
 
-            // Construire des URLs absolues pour les images (wkhtmltopdf est plus fiable avec des URLs http)
-            $baseUrl = $request->getSchemeAndHttpHost();
-            $frontBg = $baseUrl . '/PXL_20260111_142524160.MP.jpg';
-            $backBg = $baseUrl . '/PXL_20260111_142536686.jpg';
-            $photoUrl = $utilisateur->getPhotoProfil() ? ($baseUrl . $utilisateur->getPhotoProfil()) : null;
+            // Utiliser des chemins de fichiers absolus pour éviter les problèmes de deadlock avec wkhtmltopdf sur localhost
+            $projectDir = $this->getParameter('kernel.project_dir');
+            $frontBg = $projectDir . '/public/PXL_20260111_142524160.MP.jpg';
+            $backBg = $projectDir . '/public/PXL_20260111_142536686.jpg';
+            
+            $photoUrl = null;
+            if ($utilisateur->getPhotoProfil()) {
+                $photoPath = $projectDir . '/public' . $utilisateur->getPhotoProfil();
+                if (file_exists($photoPath)) {
+                    $photoUrl = $photoPath;
+                }
+            }
+
+            // Rendre le logo de l'hôpital absolu si nécessaire
+            $hopitalLogoUrl = null;
+            if ($service->getHopitalId() && method_exists($service->getHopitalId(), 'getLogoUrl')) {
+                $logoPath = $service->getHopitalId()->getLogoUrl();
+                if ($logoPath) {
+                    // Nettoyer le chemin et le rendre absolu
+                    if (strpos($logoPath, 'http') === 0) {
+                        $hopitalLogoUrl = $logoPath; // URL absolue, ne pas modifier
+                    } else {
+                        if (strpos($logoPath, '/') !== 0) {
+                            $logoPath = '/' . $logoPath;
+                        }
+                        $hopitalLogoUrl = $projectDir . '/public' . $logoPath;
+                        if (!file_exists($hopitalLogoUrl)) {
+                            $hopitalLogoUrl = null;
+                        }
+                    }
+                }
+            }
 
             $pdfContent = $cardGenerator->generateServiceCardPdf($service, $utilisateur, [
                 'front_bg_path' => $frontBg,
                 'back_bg_path' => $backBg,
                 'photo_url' => $photoUrl,
+                'hopital_logo' => $hopitalLogoUrl,
             ]);
 
             $response = new Response($pdfContent);
@@ -2816,7 +2909,43 @@ class UtilisateursControllers extends AbstractController
                 $format = 'png';
             }
 
-            $imageContent = $cardGenerator->generateServiceCardImage($service, $utilisateur, $format);
+            // Utiliser les chemins de fichiers absolus pour éviter les problèmes de deadlock avec wkhtmltoimage sur localhost
+            $projectDir = $this->getParameter('kernel.project_dir');
+            $frontBg = $projectDir . '/public/PXL_20260111_142524160.MP.jpg';
+            
+            $photoUrl = null;
+            if ($utilisateur->getPhotoProfil()) {
+                $photoPath = $projectDir . '/public' . $utilisateur->getPhotoProfil();
+                if (file_exists($photoPath)) {
+                    $photoUrl = $photoPath;
+                }
+            }
+
+            // Logo hôpital: construire le chemin absolu
+            $hopitalLogoUrl = null;
+            if ($service->getHopitalId() && method_exists($service->getHopitalId(), 'getLogoUrl')) {
+                $logoPath = $service->getHopitalId()->getLogoUrl();
+                if ($logoPath) {
+                    // Nettoyer le chemin et le rendre absolu
+                    if (strpos($logoPath, 'http') === 0) {
+                        $hopitalLogoUrl = $logoPath; // URL absolue, ne pas modifier
+                    } else {
+                        if (strpos($logoPath, '/') !== 0) {
+                            $logoPath = '/' . $logoPath;
+                        }
+                        $hopitalLogoUrl = $projectDir . '/public' . $logoPath;
+                        if (!file_exists($hopitalLogoUrl)) {
+                            $hopitalLogoUrl = null;
+                        }
+                    }
+                }
+            }
+
+            $imageContent = $cardGenerator->generateServiceCardImage($service, $utilisateur, $format, [
+                'front_bg_path' => $frontBg,
+                'photo_url' => $photoUrl,
+                'hopital_logo' => $hopitalLogoUrl,
+            ]);
 
             $response = new Response($imageContent);
             $response->headers->set('Content-Type', 'image/' . $format);
@@ -2866,11 +2995,25 @@ class UtilisateursControllers extends AbstractController
             $baseUrl = $request->getSchemeAndHttpHost();
             $photoUrl = $utilisateur->getPhotoProfil() ? ($baseUrl . $utilisateur->getPhotoProfil()) : null;
 
+            // Logo hôpital avec URL absolue pour le navigateur
+            $hopitalLogoUrl = null;
+            if ($service->getHopitalId() && method_exists($service->getHopitalId(), 'getLogoUrl')) {
+                $logoPath = $service->getHopitalId()->getLogoUrl();
+                if ($logoPath) {
+                    if (strpos($logoPath, 'http') === 0) {
+                        $hopitalLogoUrl = $logoPath;
+                    } else {
+                        $hopitalLogoUrl = $baseUrl . $logoPath;
+                    }
+                }
+            }
+
             // Utiliser un design moderne avec couleurs au lieu d'images de fond
             $htmlContent = $cardGenerator->generateServiceCardHtml($service, $utilisateur, [
                 'front_bg_path' => null, // Pas d'image de fond - utiliser CSS moderne
                 'back_bg_path' => null,  // Pas d'image de fond - utiliser CSS moderne
                 'photo_url' => $photoUrl,
+                'hopital_logo' => $hopitalLogoUrl,
                 'design_mode' => 'modern', // Mode design moderne avec couleurs
             ]);
 
