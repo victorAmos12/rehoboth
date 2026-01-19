@@ -179,6 +179,36 @@ class LogsAudit
     private ?string $signature = null;
 
     /**
+     * Alerte levée (anomalie détectée)
+     */
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $alerte = null;
+
+    /**
+     * Type d'alerte (si alerte = true)
+     * 
+     * Valeurs: HIGH, MEDIUM, LOW, SPIKE, DEGRADATION, SECURITY, FAILURE
+     */
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $typeAlerte = null;
+
+    /**
+     * ID de trace distribuée (OpenTelemetry-compatible)
+     * 
+     * Permet de corréler les logs à travers les services
+     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $traceId = null;
+
+    /**
+     * ID de requête pour corrélation
+     * 
+     * Format: req-YYYY-MM-DD-{numéro séquentiel}
+     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $requestId = null;
+
+    /**
      * Horodatage UTC
      */
     #[ORM\Column(type: 'datetime_immutable')]
@@ -496,6 +526,50 @@ class LogsAudit
     public function setSignature(?string $signature): static
     {
         $this->signature = $signature;
+        return $this;
+    }
+
+    public function getAlerte(): ?bool
+    {
+        return $this->alerte;
+    }
+
+    public function setAlerte(?bool $alerte): static
+    {
+        $this->alerte = $alerte;
+        return $this;
+    }
+
+    public function getTypeAlerte(): ?string
+    {
+        return $this->typeAlerte;
+    }
+
+    public function setTypeAlerte(?string $typeAlerte): static
+    {
+        $this->typeAlerte = $typeAlerte;
+        return $this;
+    }
+
+    public function getTraceId(): ?string
+    {
+        return $this->traceId;
+    }
+
+    public function setTraceId(?string $traceId): static
+    {
+        $this->traceId = $traceId;
+        return $this;
+    }
+
+    public function getRequestId(): ?string
+    {
+        return $this->requestId;
+    }
+
+    public function setRequestId(?string $requestId): static
+    {
+        $this->requestId = $requestId;
         return $this;
     }
 
