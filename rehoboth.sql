@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : sam. 03 jan. 2026 à 08:16
+-- Généré le : dim. 18 jan. 2026 à 08:04
 -- Version du serveur : 9.1.0
 -- Version de PHP : 8.3.14
 
@@ -139,7 +139,14 @@ CREATE TABLE IF NOT EXISTS `affectations_utilisateurs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_user_service` (`utilisateur_id`,`service_id`),
   KEY `service_id` (`service_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `affectations_utilisateurs`
+--
+
+INSERT INTO `affectations_utilisateurs` (`id`, `utilisateur_id`, `service_id`, `date_debut`, `date_fin`, `pourcentage_temps`, `actif`, `date_creation`) VALUES
+(1, 3, 1, '2026-01-11', NULL, NULL, 1, '2026-01-11 01:56:10');
 
 -- --------------------------------------------------------
 
@@ -194,6 +201,53 @@ CREATE TABLE IF NOT EXISTS `assurances_patients` (
   KEY `patient_id` (`patient_id`),
   KEY `convention_id` (`convention_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `backup_schedules`
+--
+
+DROP TABLE IF EXISTS `backup_schedules`;
+CREATE TABLE IF NOT EXISTS `backup_schedules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `hopital_id` int NOT NULL,
+  `utilisateur_id` int NOT NULL,
+  `schedule_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type_backup` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'COMPLETE',
+  `frequency` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DAILY',
+  `time` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '02:00',
+  `day_of_week` int DEFAULT NULL,
+  `day_of_month` int DEFAULT NULL,
+  `localisation_backup` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `localisation_secondaire` longtext COLLATE utf8mb4_unicode_ci,
+  `retention_days` int NOT NULL DEFAULT '30',
+  `actif` tinyint(1) NOT NULL DEFAULT '1',
+  `prochaine_execution` datetime DEFAULT NULL COMMENT '(DC2Type:datetime_immutable)',
+  `derniere_execution` datetime DEFAULT NULL COMMENT '(DC2Type:datetime_immutable)',
+  `dernier_statut` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `message_erreur` longtext COLLATE utf8mb4_unicode_ci,
+  `executions_reussies` int NOT NULL DEFAULT '0',
+  `executions_echouees` int NOT NULL DEFAULT '0',
+  `notes` longtext COLLATE utf8mb4_unicode_ci,
+  `date_creation` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '(DC2Type:datetime_immutable)',
+  `date_modification` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '(DC2Type:datetime_immutable)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `schedule_id` (`schedule_id`),
+  UNIQUE KEY `UNIQ_schedule_id` (`schedule_id`),
+  KEY `idx_hopital_id` (`hopital_id`),
+  KEY `idx_utilisateur_id` (`utilisateur_id`),
+  KEY `idx_actif` (`actif`),
+  KEY `idx_prochaine_execution` (`prochaine_execution`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `backup_schedules`
+--
+
+INSERT INTO `backup_schedules` (`id`, `hopital_id`, `utilisateur_id`, `schedule_id`, `type_backup`, `frequency`, `time`, `day_of_week`, `day_of_month`, `localisation_backup`, `localisation_secondaire`, `retention_days`, `actif`, `prochaine_execution`, `derniere_execution`, `dernier_statut`, `message_erreur`, `executions_reussies`, `executions_echouees`, `notes`, `date_creation`, `date_modification`) VALUES
+(1, 1, 1, 'SCHED-f423055cb0a7ff38-1768722778', 'COMPLETE', 'DAILY', '02:00', 1, 2, '/backups/', '', 30, 1, '2026-01-19 02:00:00', NULL, NULL, NULL, 0, 0, NULL, '2026-01-18 09:52:58', '2026-01-18 09:52:58'),
+(2, 1, 1, 'SCHED-b3c3d44e0baf649e-1768722930', 'COMPLETE', 'DAILY', '09:57', 0, 18, '/sauvegardes/', '', 30, 1, '2026-01-18 09:57:00', NULL, NULL, NULL, 0, 0, NULL, '2026-01-18 09:55:30', '2026-01-18 09:55:30');
 
 -- --------------------------------------------------------
 
@@ -277,6 +331,42 @@ CREATE TABLE IF NOT EXISTS `certifications` (
   KEY `utilisateur_id` (`utilisateur_id`),
   KEY `hopital_id` (`hopital_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `chambres`
+--
+
+DROP TABLE IF EXISTS `chambres`;
+CREATE TABLE IF NOT EXISTS `chambres` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `service_id` int NOT NULL,
+  `hopital_id` int NOT NULL,
+  `numero_chambre` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `etage` int DEFAULT NULL,
+  `nombre_lits` int DEFAULT NULL,
+  `type_chambre` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `statut` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `localisation` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `climatisee` tinyint(1) DEFAULT NULL,
+  `sanitaires_prives` tinyint(1) DEFAULT NULL,
+  `television` tinyint(1) DEFAULT NULL,
+  `telephone` tinyint(1) DEFAULT NULL,
+  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hopital` (`hopital_id`),
+  KEY `idx_service` (`service_id`),
+  KEY `idx_statut` (`statut`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `chambres`
+--
+
+INSERT INTO `chambres` (`id`, `service_id`, `hopital_id`, `numero_chambre`, `etage`, `nombre_lits`, `type_chambre`, `statut`, `description`, `localisation`, `climatisee`, `sanitaires_prives`, `television`, `telephone`, `date_creation`) VALUES
+(1, 1, 1, '101', 1, 3, 'Simple', 'disponible', '', 'Aille B', 0, 0, 0, 0, '2026-01-10 12:38:03');
 
 -- --------------------------------------------------------
 
@@ -602,7 +692,17 @@ CREATE TABLE IF NOT EXISTS `doctrine_migration_versions` (
 --
 
 INSERT INTO `doctrine_migration_versions` (`version`, `executed_at`, `execution_time`) VALUES
-('DoctrineMigrations\\Version20240101000000CreateHISDatabase', '2026-01-03 03:19:35', 5948);
+('DoctrineMigrations\\Version20240101000000CreateHISDatabase', '2026-01-03 03:19:35', 5948),
+('DoctrineMigrations\\Version20250115CreateChambresTable', '2026-01-10 11:25:54', 0),
+('DoctrineMigrations\\Version20250115CreateTypesServicesAndTypesPoles', '2026-01-11 01:20:13', 976),
+('DoctrineMigrations\\Version20250115EnhanceLogsAuditAndBackups', '2026-01-17 06:58:14', 769),
+('DoctrineMigrations\\Version20250115EnhanceServicesManagement', '2026-01-10 15:59:11', 2185),
+('DoctrineMigrations\\Version20250120AddServiceCardFields', '2026-01-11 18:11:43', 1019),
+('DoctrineMigrations\\Version20250120CreateBackupSchedules', '2026-01-17 09:07:16', 214),
+('DoctrineMigrations\\Version20260103AddPatientMedicalInfo', '2026-01-07 11:41:13', 849),
+('DoctrineMigrations\\Version20260103CreateMenusTable', '2026-01-03 08:28:58', 536),
+('DoctrineMigrations\\Version20260108123505', '2026-01-08 12:35:51', 61),
+('DoctrineMigrations\\Version20260108130000', '2026-01-08 12:38:57', 1289);
 
 -- --------------------------------------------------------
 
@@ -660,7 +760,16 @@ CREATE TABLE IF NOT EXISTS `dossiers_medicaux` (
   KEY `idx_patient` (`patient_id`),
   KEY `idx_hopital` (`hopital_id`),
   KEY `medecin_referent_id` (`medecin_referent_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `dossiers_medicaux`
+--
+
+INSERT INTO `dossiers_medicaux` (`id`, `patient_id`, `hopital_id`, `numero_dme`, `date_ouverture`, `date_fermeture`, `medecin_referent_id`, `statut`, `notes_generales`, `date_creation`, `date_modification`) VALUES
+(1, 2, 1, '12323', '2026-01-07', NULL, 3, 'ACTIF', NULL, '2026-01-07 15:18:19', '2026-01-07 15:18:19'),
+(2, 2, 1, '1111', '2026-01-08', NULL, 3, 'ACTIF', NULL, '2026-01-08 16:28:37', '2026-01-08 16:28:37'),
+(3, 3, 1, '12EED', '2026-01-09', NULL, 4, 'ACTIF', NULL, '2026-01-09 14:12:28', '2026-01-09 14:12:28');
 
 -- --------------------------------------------------------
 
@@ -963,7 +1072,7 @@ CREATE TABLE IF NOT EXISTS `hopitaux` (
 --
 
 INSERT INTO `hopitaux` (`id`, `code`, `nom`, `adresse`, `ville`, `code_postal`, `telephone`, `email`, `directeur_id`, `type_hopital`, `nombre_lits`, `logo_url`, `icone_url`, `couleur_primaire`, `couleur_secondaire`, `site_web`, `numero_siret`, `numero_tva`, `actif`, `date_creation`, `date_modification`) VALUES
-(1, 'REHOBOTH', 'Rehoboth Hospital', '123 Rue de la Santé', 'Paris', '75000', '+33123456789', 'contact@rehoboth.com', NULL, 'Hôpital Général', 500, 'https://example.com/logo.png', 'https://example.com/icon.png', '#0066CC', '#00CC99', 'https://www.rehoboth.com', '12345678901234', 'FR12345678901', 1, '2026-01-03 09:01:02', '2026-01-03 09:01:02');
+(1, 'REHOBOTH', 'Rehoboth Hospital', '123 Rue de la Santé', 'Paris', '75000', '+33123456789', 'contact@rehoboth.com', NULL, 'Hôpital Général', 500, 'public\\assets\\image_rehoboth.png', 'https://example.com/icon.png', '#0066CC', '#00CC99', 'https://www.rehoboth.com', '12345678901234', 'FR12345678901', 1, '2026-01-03 09:01:02', '2026-01-06 23:04:14');
 
 -- --------------------------------------------------------
 
@@ -1204,6 +1313,7 @@ DROP TABLE IF EXISTS `lits`;
 CREATE TABLE IF NOT EXISTS `lits` (
   `id` int NOT NULL AUTO_INCREMENT,
   `service_id` int NOT NULL,
+  `chambre_id` int NOT NULL,
   `hopital_id` int NOT NULL,
   `numero_lit` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `type_lit` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Standard, Semi-privé, Privé, Soins intensifs',
@@ -1217,7 +1327,15 @@ CREATE TABLE IF NOT EXISTS `lits` (
   KEY `idx_service` (`service_id`),
   KEY `idx_hopital` (`hopital_id`),
   KEY `idx_statut` (`statut`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `lits`
+--
+
+INSERT INTO `lits` (`id`, `service_id`, `chambre_id`, `hopital_id`, `numero_lit`, `type_lit`, `etage`, `chambre`, `statut`, `date_derniere_maintenance`, `date_creation`) VALUES
+(2, 1, 1, 1, 'A12', 'Standard', 1, NULL, 'disponible', NULL, '2026-01-10 12:54:32'),
+(3, 1, 1, 1, 'A1112', 'Standard', 1, NULL, 'disponible', NULL, '2026-01-10 13:38:27');
 
 -- --------------------------------------------------------
 
@@ -1239,11 +1357,30 @@ CREATE TABLE IF NOT EXISTS `logs_audit` (
   `adresse_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_agent` text COLLATE utf8mb4_unicode_ci,
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  `type_log` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TECHNIQUE',
+  `niveau` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `categorie` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `action_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entite_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `message` longtext COLLATE utf8mb4_unicode_ci,
+  `contexte` json DEFAULT NULL,
+  `stack_trace` longtext COLLATE utf8mb4_unicode_ci,
+  `endpoint` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `methode_http` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `temps_reponse_ms` int DEFAULT NULL,
+  `code_http` int DEFAULT NULL,
+  `statut` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `message_erreur` longtext COLLATE utf8mb4_unicode_ci,
+  `signature` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_utilisateur` (`utilisateur_id`),
   KEY `idx_hopital` (`hopital_id`),
   KEY `idx_module` (`module`),
-  KEY `idx_date` (`date_creation`)
+  KEY `idx_date` (`date_creation`),
+  KEY `idx_type_log` (`type_log`),
+  KEY `idx_niveau` (`niveau`),
+  KEY `idx_action_type` (`action_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1300,6 +1437,309 @@ CREATE TABLE IF NOT EXISTS `medicaments` (
   KEY `devise_id` (`devise_id`),
   KEY `taux_tva_id` (`taux_tva_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `menus`
+--
+
+DROP TABLE IF EXISTS `menus`;
+CREATE TABLE IF NOT EXISTS `menus` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nom` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `icone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `route` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `module` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `parent_id` int DEFAULT NULL,
+  `ordre` int DEFAULT NULL,
+  `actif` tinyint(1) NOT NULL DEFAULT '1',
+  `date_creation` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=125 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `menus`
+--
+
+INSERT INTO `menus` (`id`, `code`, `nom`, `description`, `icone`, `route`, `module`, `parent_id`, `ordre`, `actif`, `date_creation`) VALUES
+(1, 'dashboard', 'Tableau de bord', NULL, 'dashboard', '/dashboard', 'dashboard', NULL, 1, 1, '2026-01-03 10:28:58'),
+(2, 'patients', 'Patients', NULL, 'people', '/patients', 'patients', NULL, 2, 1, '2026-01-03 10:28:58'),
+(3, 'patients.list', 'Liste des patients', NULL, 'list', '/patients/list', 'patients', 2, 1, 1, '2026-01-03 10:28:58'),
+(4, 'patients.create', 'Nouveau patient', NULL, 'add', '/patients/create', 'patients', 2, 2, 1, '2026-01-03 10:28:58'),
+(5, 'patients.export', 'Exporter', NULL, 'download', '/patients/export', 'patients', 2, 3, 1, '2026-01-03 10:28:58'),
+(6, 'dossiers_medicaux', 'Dossiers Médicaux', NULL, 'folder_open', '/dossiers-medicaux', 'dossiers_medicaux', NULL, 3, 1, '2026-01-03 10:28:58'),
+(7, 'dossiers_medicaux.list', 'Liste des dossiers', NULL, 'list', '/dossiers-medicaux/list', 'dossiers_medicaux', 6, 1, 1, '2026-01-03 10:28:58'),
+(8, 'dossiers_medicaux.create', 'Nouveau dossier', NULL, 'add', '/dossiers-medicaux/create', 'dossiers_medicaux', 6, 2, 1, '2026-01-03 10:28:58'),
+(9, 'admissions', 'Admissions', NULL, 'assignment', '/admissions', 'admissions', NULL, 4, 1, '2026-01-03 10:28:58'),
+(10, 'admissions.list', 'Liste des admissions', NULL, 'list', '/admissions/list', 'admissions', 9, 1, 1, '2026-01-03 10:28:58'),
+(11, 'admissions.create', 'Nouvelle admission', NULL, 'add', '/admissions/create', 'admissions', 9, 2, 1, '2026-01-03 10:28:58'),
+(12, 'transferts', 'Transferts', NULL, 'compare_arrows', '/transferts', 'transferts', 9, 3, 1, '2026-01-03 10:28:58'),
+(13, 'sorties', 'Sorties', NULL, 'exit_to_app', '/sorties', 'sorties', 9, 4, 1, '2026-01-03 10:28:58'),
+(14, 'consultations', 'Consultations', NULL, 'medical_services', '/consultations', 'consultations', NULL, 5, 1, '2026-01-03 10:28:58'),
+(15, 'consultations.list', 'Liste des consultations', NULL, 'list', '/consultations/list', 'consultations', 14, 1, 1, '2026-01-03 10:28:58'),
+(16, 'consultations.create', 'Nouvelle consultation', NULL, 'add', '/consultations/create', 'consultations', 14, 2, 1, '2026-01-03 10:28:58'),
+(17, 'rendez_vous', 'Rendez-vous', NULL, 'event', '/rendez-vous', 'rendez_vous', NULL, 6, 1, '2026-01-03 10:28:58'),
+(18, 'rendez_vous.calendar', 'Calendrier', NULL, 'calendar_today', '/rendez-vous/calendar', 'rendez_vous', 17, 1, 1, '2026-01-03 10:28:58'),
+(19, 'rendez_vous.list', 'Liste', NULL, 'list', '/rendez-vous/list', 'rendez_vous', 17, 2, 1, '2026-01-03 10:28:58'),
+(20, 'rendez_vous.create', 'Nouveau rendez-vous', NULL, 'add', '/rendez-vous/create', 'rendez_vous', 17, 3, 1, '2026-01-03 10:28:58'),
+(21, 'creneaux', 'Créneaux', NULL, 'schedule', '/creneaux', 'creneaux', 17, 4, 1, '2026-01-03 10:28:58'),
+(22, 'prescriptions', 'Prescriptions', NULL, 'prescription', '/prescriptions', 'prescriptions', NULL, 7, 1, '2026-01-03 10:28:58'),
+(23, 'prescriptions.list', 'Liste des prescriptions', NULL, 'list', '/prescriptions/list', 'prescriptions', 22, 1, 1, '2026-01-03 10:28:58'),
+(24, 'prescriptions.create', 'Nouvelle prescription', NULL, 'add', '/prescriptions/create', 'prescriptions', 22, 2, 1, '2026-01-03 10:28:58'),
+(25, 'prescriptions.valider', 'Valider', NULL, 'check_circle', '/prescriptions/valider', 'prescriptions', 22, 3, 1, '2026-01-03 10:28:58'),
+(26, 'medicaments', 'Médicaments', NULL, 'medication', '/medicaments', 'medicaments', 22, 4, 1, '2026-01-03 10:28:58'),
+(27, 'administrations', 'Administrations', NULL, 'local_hospital', '/administrations', 'administrations', 22, 5, 1, '2026-01-03 10:28:58'),
+(28, 'pharmacie', 'Pharmacie', NULL, 'local_pharmacy', '/pharmacie', 'pharmacie', NULL, 8, 1, '2026-01-03 10:28:58'),
+(29, 'stocks_pharmacie', 'Stocks', NULL, 'inventory', '/pharmacie/stocks', 'stocks_pharmacie', 28, 1, 1, '2026-01-03 10:28:58'),
+(30, 'stocks_pharmacie.list', 'Consulter stocks', NULL, 'list', '/pharmacie/stocks/list', 'stocks_pharmacie', 29, 1, 1, '2026-01-03 10:28:58'),
+(31, 'stocks_pharmacie.create', 'Ajouter stock', NULL, 'add', '/pharmacie/stocks/create', 'stocks_pharmacie', 29, 2, 1, '2026-01-03 10:28:58'),
+(32, 'distributions_pharmacie', 'Distributions', NULL, 'local_shipping', '/pharmacie/distributions', 'distributions_pharmacie', 28, 2, 1, '2026-01-03 10:28:58'),
+(33, 'distributions_pharmacie.list', 'Liste', NULL, 'list', '/pharmacie/distributions/list', 'distributions_pharmacie', 32, 1, 1, '2026-01-03 10:28:58'),
+(34, 'distributions_pharmacie.create', 'Nouvelle distribution', NULL, 'add', '/pharmacie/distributions/create', 'distributions_pharmacie', 32, 2, 1, '2026-01-03 10:28:58'),
+(35, 'laboratoire', 'Laboratoire', NULL, 'science', '/laboratoire', 'laboratoire', NULL, 9, 1, '2026-01-03 10:28:58'),
+(36, 'ordonnances_labo', 'Ordonnances', NULL, 'description', '/laboratoire/ordonnances', 'ordonnances_labo', 35, 1, 1, '2026-01-03 10:28:58'),
+(37, 'ordonnances_labo.list', 'Liste', NULL, 'list', '/laboratoire/ordonnances/list', 'ordonnances_labo', 36, 1, 1, '2026-01-03 10:28:58'),
+(38, 'ordonnances_labo.create', 'Nouvelle ordonnance', NULL, 'add', '/laboratoire/ordonnances/create', 'ordonnances_labo', 36, 2, 1, '2026-01-03 10:28:58'),
+(39, 'prelevements', 'Prélèvements', NULL, 'bloodtype', '/laboratoire/prelevements', 'prelevements', 35, 2, 1, '2026-01-03 10:28:58'),
+(40, 'prelevements.list', 'Liste', NULL, 'list', '/laboratoire/prelevements/list', 'prelevements', 39, 1, 1, '2026-01-03 10:28:58'),
+(41, 'prelevements.create', 'Nouveau prélèvement', NULL, 'add', '/laboratoire/prelevements/create', 'prelevements', 39, 2, 1, '2026-01-03 10:28:58'),
+(42, 'resultats_labo', 'Résultats', NULL, 'assessment', '/laboratoire/resultats', 'resultats_labo', 35, 3, 1, '2026-01-03 10:28:58'),
+(43, 'resultats_labo.list', 'Liste', NULL, 'list', '/laboratoire/resultats/list', 'resultats_labo', 42, 1, 1, '2026-01-03 10:28:58'),
+(44, 'resultats_labo.create', 'Nouveau résultat', NULL, 'add', '/laboratoire/resultats/create', 'resultats_labo', 42, 2, 1, '2026-01-03 10:28:58'),
+(45, 'imagerie', 'Imagerie', NULL, 'image', '/imagerie', 'imagerie', NULL, 10, 1, '2026-01-03 10:28:58'),
+(46, 'ordonnances_imagerie', 'Ordonnances', NULL, 'description', '/imagerie/ordonnances', 'ordonnances_imagerie', 45, 1, 1, '2026-01-03 10:28:58'),
+(47, 'ordonnances_imagerie.list', 'Liste', NULL, 'list', '/imagerie/ordonnances/list', 'ordonnances_imagerie', 46, 1, 1, '2026-01-03 10:28:58'),
+(48, 'ordonnances_imagerie.create', 'Nouvelle ordonnance', NULL, 'add', '/imagerie/ordonnances/create', 'ordonnances_imagerie', 46, 2, 1, '2026-01-03 10:28:58'),
+(49, 'examens_imagerie', 'Examens', NULL, 'image_search', '/imagerie/examens', 'examens_imagerie', 45, 2, 1, '2026-01-03 10:28:58'),
+(50, 'examens_imagerie.list', 'Liste', NULL, 'list', '/imagerie/examens/list', 'examens_imagerie', 49, 1, 1, '2026-01-03 10:28:58'),
+(51, 'examens_imagerie.create', 'Nouvel examen', NULL, 'add', '/imagerie/examens/create', 'examens_imagerie', 49, 2, 1, '2026-01-03 10:28:58'),
+(52, 'rapports_radiologiques', 'Rapports', NULL, 'description', '/imagerie/rapports', 'rapports_radiologiques', 45, 3, 1, '2026-01-03 10:28:58'),
+(53, 'rapports_radiologiques.list', 'Liste', NULL, 'list', '/imagerie/rapports/list', 'rapports_radiologiques', 52, 1, 1, '2026-01-03 10:28:58'),
+(54, 'rapports_radiologiques.create', 'Nouveau rapport', NULL, 'add', '/imagerie/rapports/create', 'rapports_radiologiques', 52, 2, 1, '2026-01-03 10:28:58'),
+(55, 'chirurgie', 'Chirurgie', NULL, 'local_hospital', '/chirurgie', 'chirurgie', NULL, 11, 1, '2026-01-03 10:28:58'),
+(56, 'demandes_interventions', 'Demandes', NULL, 'request_page', '/chirurgie/demandes', 'demandes_interventions', 55, 1, 1, '2026-01-03 10:28:58'),
+(57, 'demandes_interventions.list', 'Liste', NULL, 'list', '/chirurgie/demandes/list', 'demandes_interventions', 56, 1, 1, '2026-01-03 10:28:58'),
+(58, 'demandes_interventions.create', 'Nouvelle demande', NULL, 'add', '/chirurgie/demandes/create', 'demandes_interventions', 56, 2, 1, '2026-01-03 10:28:58'),
+(59, 'planning_operatoire', 'Planning', NULL, 'calendar_month', '/chirurgie/planning', 'planning_operatoire', 55, 2, 1, '2026-01-03 10:28:58'),
+(60, 'planning_operatoire.list', 'Liste', NULL, 'list', '/chirurgie/planning/list', 'planning_operatoire', 59, 1, 1, '2026-01-03 10:28:58'),
+(61, 'planning_operatoire.create', 'Nouveau planning', NULL, 'add', '/chirurgie/planning/create', 'planning_operatoire', 59, 2, 1, '2026-01-03 10:28:58'),
+(62, 'rapports_operatoires', 'Rapports', NULL, 'description', '/chirurgie/rapports', 'rapports_operatoires', 55, 3, 1, '2026-01-03 10:28:58'),
+(63, 'rapports_operatoires.list', 'Liste', NULL, 'list', '/chirurgie/rapports/list', 'rapports_operatoires', 62, 1, 1, '2026-01-03 10:28:58'),
+(64, 'rapports_operatoires.create', 'Nouveau rapport', NULL, 'add', '/chirurgie/rapports/create', 'rapports_operatoires', 62, 2, 1, '2026-01-03 10:28:58'),
+(65, 'urgences', 'Urgences', NULL, 'emergency', '/urgences', 'urgences', NULL, 12, 1, '2026-01-03 10:28:58'),
+(66, 'triages', 'Triages', NULL, 'priority_high', '/urgences/triages', 'triages', 65, 1, 1, '2026-01-03 10:28:58'),
+(67, 'triages.list', 'Liste', NULL, 'list', '/urgences/triages/list', 'triages', 66, 1, 1, '2026-01-03 10:28:58'),
+(68, 'triages.create', 'Nouveau triage', NULL, 'add', '/urgences/triages/create', 'triages', 66, 2, 1, '2026-01-03 10:28:58'),
+(69, 'facturation', 'Facturation', NULL, 'receipt', '/facturation', 'facturation', NULL, 13, 1, '2026-01-03 10:28:58'),
+(70, 'factures', 'Factures', NULL, 'description', '/facturation/factures', 'factures', 69, 1, 1, '2026-01-03 10:28:59'),
+(71, 'factures.list', 'Liste', NULL, 'list', '/facturation/factures/list', 'factures', 70, 1, 1, '2026-01-03 10:28:59'),
+(72, 'factures.create', 'Nouvelle facture', NULL, 'add', '/facturation/factures/create', 'factures', 70, 2, 1, '2026-01-03 10:28:59'),
+(73, 'paiements', 'Paiements', NULL, 'payment', '/facturation/paiements', 'paiements', 69, 2, 1, '2026-01-03 10:28:59'),
+(74, 'paiements.list', 'Liste', NULL, 'list', '/facturation/paiements/list', 'paiements', 73, 1, 1, '2026-01-03 10:28:59'),
+(75, 'paiements.create', 'Nouveau paiement', NULL, 'add', '/facturation/paiements/create', 'paiements', 73, 2, 1, '2026-01-03 10:28:59'),
+(76, 'reclamations_assurance', 'Réclamations', NULL, 'warning', '/facturation/reclamations', 'reclamations_assurance', 69, 3, 1, '2026-01-03 10:28:59'),
+(77, 'rh', 'Ressources Humaines', NULL, 'group', '/rh', 'rh', NULL, 14, 1, '2026-01-03 10:28:59'),
+(78, 'utilisateurs', 'Utilisateurs', NULL, 'person', '/rh/utilisateurs', 'utilisateurs', 77, 1, 1, '2026-01-03 10:28:59'),
+(79, 'utilisateurs.list', 'Liste', NULL, 'list', '/rh/utilisateurs/list', 'utilisateurs', 78, 1, 1, '2026-01-03 10:28:59'),
+(80, 'utilisateurs.create', 'Nouvel utilisateur', NULL, 'add', '/rh/utilisateurs/create', 'utilisateurs', 78, 2, 1, '2026-01-03 10:28:59'),
+(81, 'formations', 'Formations', NULL, 'school', '/rh/formations', 'formations', 77, 2, 1, '2026-01-03 10:28:59'),
+(82, 'formations.list', 'Liste', NULL, 'list', '/rh/formations/list', 'formations', 81, 1, 1, '2026-01-03 10:28:59'),
+(83, 'formations.create', 'Nouvelle formation', NULL, 'add', '/rh/formations/create', 'formations', 81, 2, 1, '2026-01-03 10:28:59'),
+(84, 'conges', 'Congés', NULL, 'beach_access', '/rh/conges', 'conges', 77, 3, 1, '2026-01-03 10:28:59'),
+(85, 'conges.list', 'Liste', NULL, 'list', '/rh/conges/list', 'conges', 84, 1, 1, '2026-01-03 10:28:59'),
+(86, 'conges.create', 'Demander un congé', NULL, 'add', '/rh/conges/create', 'conges', 84, 2, 1, '2026-01-03 10:28:59'),
+(87, 'paie', 'Paie', NULL, 'attach_money', '/rh/paie', 'paie', 77, 4, 1, '2026-01-03 10:28:59'),
+(88, 'paie.list', 'Bulletins', NULL, 'list', '/rh/paie/list', 'paie', 87, 1, 1, '2026-01-03 10:28:59'),
+(89, 'paie.create', 'Nouveau bulletin', NULL, 'add', '/rh/paie/create', 'paie', 87, 2, 1, '2026-01-03 10:28:59'),
+(90, 'administration', 'Administration', NULL, 'admin_panel_settings', '/administration', 'administration', NULL, 15, 1, '2026-01-03 10:28:59'),
+(91, 'hopitaux', 'Hôpitaux', NULL, 'business', '/administration/hopitaux', 'hopitaux', 90, 1, 1, '2026-01-03 10:28:59'),
+(92, 'hopitaux.list', 'Liste', NULL, 'list', '/administration/hopitaux/list', 'hopitaux', 91, 1, 1, '2026-01-03 10:28:59'),
+(93, 'hopitaux.create', 'Nouvel hôpital', NULL, 'add', '/administration/hopitaux/create', 'hopitaux', 91, 2, 1, '2026-01-03 10:28:59'),
+(94, 'services', 'Services', NULL, 'domain', '/administration/services', 'services', 90, 2, 1, '2026-01-03 10:28:59'),
+(95, 'services.list', 'Liste', NULL, 'list', '/administration/services/list', 'services', 94, 1, 1, '2026-01-03 10:28:59'),
+(96, 'services.create', 'Nouveau service', NULL, 'add', '/administration/services/create', 'services', 94, 2, 1, '2026-01-03 10:28:59'),
+(97, 'lits', 'Lits et chambres', NULL, 'bed', '/administration/lits', 'lits', 90, 3, 1, '2026-01-03 10:28:59'),
+(98, 'lits.list', 'Liste', NULL, 'list', '/administration/lits/list', 'lits', 97, 1, 1, '2026-01-03 10:28:59'),
+(99, 'lits.create', 'Nouveau lit', NULL, 'add', '/administration/lits/create', 'lits', 97, 2, 1, '2026-01-03 10:28:59'),
+(100, 'equipements', 'Équipements', NULL, 'devices', '/administration/equipements', 'equipements', 90, 4, 1, '2026-01-03 10:28:59'),
+(101, 'equipements.list', 'Liste', NULL, 'list', '/administration/equipements/list', 'equipements', 100, 1, 1, '2026-01-03 10:28:59'),
+(102, 'equipements.create', 'Nouvel équipement', NULL, 'add', '/administration/equipements/create', 'equipements', 100, 2, 1, '2026-01-03 10:28:59'),
+(103, 'maintenance', 'Maintenance', NULL, 'build', '/administration/maintenance', 'maintenance', 90, 5, 1, '2026-01-03 10:28:59'),
+(104, 'maintenance.list', 'Liste', NULL, 'list', '/administration/maintenance/list', 'maintenance', 103, 1, 1, '2026-01-03 10:28:59'),
+(105, 'maintenance.create', 'Nouvelle intervention', NULL, 'add', '/administration/maintenance/create', 'maintenance', 103, 2, 1, '2026-01-03 10:28:59'),
+(106, 'fournisseurs', 'Fournisseurs', NULL, 'local_shipping', '/administration/fournisseurs', 'fournisseurs', 90, 6, 1, '2026-01-03 10:28:59'),
+(107, 'fournisseurs.list', 'Liste', NULL, 'list', '/administration/fournisseurs/list', 'fournisseurs', 106, 1, 1, '2026-01-03 10:28:59'),
+(108, 'fournisseurs.create', 'Nouveau fournisseur', NULL, 'add', '/administration/fournisseurs/create', 'fournisseurs', 106, 2, 1, '2026-01-03 10:28:59'),
+(109, 'bons_commande', 'Bons de commande', NULL, 'shopping_cart', '/administration/bons-commande', 'bons_commande', 90, 7, 1, '2026-01-03 10:28:59'),
+(110, 'bons_commande.list', 'Liste', NULL, 'list', '/administration/bons-commande/list', 'bons_commande', 109, 1, 1, '2026-01-03 10:28:59'),
+(111, 'bons_commande.create', 'Nouveau bon', NULL, 'add', '/administration/bons-commande/create', 'bons_commande', 109, 2, 1, '2026-01-03 10:28:59'),
+(112, 'rapports', 'Rapports', NULL, 'bar_chart', '/rapports', 'rapports', NULL, 16, 1, '2026-01-03 10:28:59'),
+(113, 'rapports.list', 'Mes rapports', NULL, 'list', '/rapports/list', 'rapports', 112, 1, 1, '2026-01-03 10:28:59'),
+(114, 'rapports.create', 'Créer un rapport', NULL, 'add', '/rapports/create', 'rapports', 112, 2, 1, '2026-01-03 10:28:59'),
+(115, 'indicateurs', 'Indicateurs', NULL, 'trending_up', '/rapports/indicateurs', 'indicateurs', 112, 3, 1, '2026-01-03 10:28:59'),
+(116, 'plaintes', 'Plaintes & Incidents', NULL, 'warning', '/rapports/plaintes', 'plaintes', 112, 4, 1, '2026-01-03 10:28:59'),
+(117, 'parametres', 'Paramètres', NULL, 'settings', '/parametres', 'parametres', NULL, 17, 1, '2026-01-03 10:28:59'),
+(118, 'roles', 'Rôles & Permissions', NULL, 'security', '/parametres/roles', 'roles', 117, 1, 1, '2026-01-03 10:28:59'),
+(119, 'roles.list', 'Liste des rôles', NULL, 'list', '/parametres/roles/list', 'roles', 118, 1, 1, '2026-01-03 10:28:59'),
+(120, 'roles.create', 'Nouveau rôle', NULL, 'add', '/parametres/roles/create', 'roles', 118, 2, 1, '2026-01-03 10:28:59'),
+(121, 'logs', 'Logs & Audit', NULL, 'history', '/parametres/logs', 'logs', 117, 2, 1, '2026-01-03 10:28:59'),
+(122, 'logs.audit', 'Audit', NULL, 'list', '/parametres/logs/audit', 'logs', 121, 1, 1, '2026-01-03 10:28:59'),
+(123, 'sauvegardes', 'Sauvegardes', NULL, 'backup', '/parametres/sauvegardes', 'sauvegardes', 117, 3, 1, '2026-01-03 10:28:59'),
+(124, 'archives', 'Archives', NULL, 'archive', '/parametres/archives', 'archives', 117, 4, 1, '2026-01-03 10:28:59');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `menu_roles`
+--
+
+DROP TABLE IF EXISTS `menu_roles`;
+CREATE TABLE IF NOT EXISTS `menu_roles` (
+  `menu_id` int NOT NULL,
+  `role_id` int NOT NULL,
+  PRIMARY KEY (`menu_id`,`role_id`),
+  KEY `role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `menu_roles`
+--
+
+INSERT INTO `menu_roles` (`menu_id`, `role_id`) VALUES
+(1, 1),
+(2, 1),
+(3, 1),
+(4, 1),
+(5, 1),
+(6, 1),
+(7, 1),
+(8, 1),
+(9, 1),
+(10, 1),
+(11, 1),
+(12, 1),
+(13, 1),
+(14, 1),
+(15, 1),
+(16, 1),
+(17, 1),
+(18, 1),
+(19, 1),
+(20, 1),
+(21, 1),
+(22, 1),
+(23, 1),
+(24, 1),
+(25, 1),
+(26, 1),
+(27, 1),
+(28, 1),
+(29, 1),
+(30, 1),
+(31, 1),
+(32, 1),
+(33, 1),
+(34, 1),
+(35, 1),
+(36, 1),
+(37, 1),
+(38, 1),
+(39, 1),
+(40, 1),
+(41, 1),
+(42, 1),
+(43, 1),
+(44, 1),
+(45, 1),
+(46, 1),
+(47, 1),
+(48, 1),
+(49, 1),
+(50, 1),
+(51, 1),
+(52, 1),
+(53, 1),
+(54, 1),
+(55, 1),
+(56, 1),
+(57, 1),
+(58, 1),
+(59, 1),
+(60, 1),
+(61, 1),
+(62, 1),
+(63, 1),
+(64, 1),
+(65, 1),
+(66, 1),
+(67, 1),
+(68, 1),
+(69, 1),
+(70, 1),
+(71, 1),
+(72, 1),
+(73, 1),
+(74, 1),
+(75, 1),
+(76, 1),
+(77, 1),
+(78, 1),
+(79, 1),
+(80, 1),
+(81, 1),
+(82, 1),
+(83, 1),
+(84, 1),
+(85, 1),
+(86, 1),
+(87, 1),
+(88, 1),
+(89, 1),
+(90, 1),
+(91, 1),
+(92, 1),
+(93, 1),
+(94, 1),
+(95, 1),
+(96, 1),
+(97, 1),
+(98, 1),
+(99, 1),
+(100, 1),
+(101, 1),
+(102, 1),
+(103, 1),
+(104, 1),
+(105, 1),
+(106, 1),
+(107, 1),
+(108, 1),
+(109, 1),
+(110, 1),
+(111, 1),
+(112, 1),
+(113, 1),
+(114, 1),
+(115, 1),
+(116, 1),
+(117, 1),
+(118, 1),
+(119, 1),
+(120, 1),
+(121, 1),
+(122, 1),
+(123, 1),
+(124, 1),
+(2, 3),
+(3, 3),
+(5, 3),
+(6, 3),
+(7, 3),
+(8, 3);
 
 -- --------------------------------------------------------
 
@@ -1698,13 +2138,34 @@ CREATE TABLE IF NOT EXISTS `patients` (
   `actif` tinyint(1) DEFAULT '1',
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
   `date_modification` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `antecedents_familiaux_pere` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Antécédents médicaux du père',
+  `antecedents_familiaux_mere` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Antécédents médicaux de la mère',
+  `antecedents_familiaux_enfants` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Antécédents médicaux des enfants',
+  `antecedents_familiaux_epouse` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Antécédents médicaux du conjoint/conjointe',
+  `antecedents_familiaux_autres` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Autres antécédents familiaux pertinents',
+  `historique_vaccinations` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Historique complet des vaccinations (JSON format)',
+  `date_derniere_vaccination` date DEFAULT NULL COMMENT 'Date de la dernière vaccination',
+  `habitudes_vie` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Tabagisme, alcool, drogues, etc.',
+  `facteurs_risque` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Facteurs de risque identifiés',
+  `observations_generales` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Observations générales du dossier médical',
+  `date_derniere_mise_a_jour_dossier` datetime DEFAULT NULL COMMENT 'Date de la dernière mise à jour du dossier médical',
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_hopital_dossier` (`hopital_id`,`numero_dossier`),
   KEY `idx_hopital` (`hopital_id`),
   KEY `idx_nom_prenom` (`nom`,`prenom`),
   KEY `idx_numero_identite` (`numero_identite`),
   KEY `idx_date_naissance` (`date_naissance`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `patients`
+--
+
+INSERT INTO `patients` (`id`, `hopital_id`, `numero_dossier`, `nom`, `prenom`, `date_naissance`, `sexe`, `numero_identite`, `type_identite`, `adresse`, `ville`, `code_postal`, `telephone`, `email`, `contact_urgence_nom`, `contact_urgence_telephone`, `contact_urgence_lien`, `groupe_sanguin`, `allergies`, `antecedents_medicaux`, `antecedents_chirurgicaux`, `medicaments_actuels`, `statut_civil`, `profession`, `nationalite`, `langue_preference`, `photo_patient`, `actif`, `date_creation`, `date_modification`, `antecedents_familiaux_pere`, `antecedents_familiaux_mere`, `antecedents_familiaux_enfants`, `antecedents_familiaux_epouse`, `antecedents_familiaux_autres`, `historique_vaccinations`, `date_derniere_vaccination`, `habitudes_vie`, `facteurs_risque`, `observations_generales`, `date_derniere_mise_a_jour_dossier`) VALUES
+(1, 1, 'PAT-2024-001', 'Dupont', 'Jean', '1980-05-15', 'M', '123456789', 'Passeport', '123 Rue de la Paix', 'Paris', '75001', '+33612345678', 'jean.dupont@email.com', 'Marie Dupont', '+33687654321', 'Épouse', 'O+', 'Pénicilline', 'Diabète type 2', 'Appendicectomie 2010', 'Metformine 500mg', 'Marié', 'Ingénieur', 'Française', 'Français', NULL, 1, '2026-01-06 17:21:29', '2026-01-07 05:09:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 1, 'PAT-2024-002', 'Bros', 'Man', '1980-05-15', 'M', '123456789', 'Passeport', '123 Rue de la Paix', 'Paris', '75001', '+33612345678', 'jean.dupont@email.com', 'Marie Dupont', '+33687654321', 'Épouse', 'O+', 'Pénicilline', 'Diabète type 2', 'Appendicectomie 2010', 'Metformine 500mg', 'Marié', 'Ingénieur', 'Française', 'Français', NULL, 1, '2026-01-06 20:30:54', '2026-01-08 16:27:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-08 16:27:39'),
+(3, 1, 'PAT-2026-000003', 'Bros braoss', 'Man', '2000-12-11', 'M', NULL, NULL, NULL, NULL, NULL, '0992373634', 'a@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-09 14:09:08', '2026-01-09 14:09:08', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(4, 1, 'PAT-2026-000004', 'sarah', 'belle', '2000-06-09', 'F', NULL, NULL, NULL, NULL, NULL, '0998998999', 'sarah@gmail.com', NULL, NULL, NULL, 'A-', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-09 22:43:08', '2026-01-09 22:43:08', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1962,6 +2423,38 @@ CREATE TABLE IF NOT EXISTS `planning_operatoire` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `poles_activite`
+--
+
+DROP TABLE IF EXISTS `poles_activite`;
+CREATE TABLE IF NOT EXISTS `poles_activite` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `hopital_id` int NOT NULL,
+  `responsable_id` int DEFAULT NULL,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nom` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `type_pole` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type_pole_id` int DEFAULT NULL,
+  `budget_annuel` decimal(12,2) DEFAULT NULL,
+  `actif` tinyint(1) DEFAULT '1',
+  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hopital` (`hopital_id`),
+  KEY `idx_responsable` (`responsable_id`),
+  KEY `idx_type_pole_id` (`type_pole_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `poles_activite`
+--
+
+INSERT INTO `poles_activite` (`id`, `hopital_id`, `responsable_id`, `code`, `nom`, `description`, `type_pole`, `type_pole_id`, `budget_annuel`, `actif`, `date_creation`) VALUES
+(1, 1, NULL, 'CARDIO', 'Pole cardiologie', NULL, 'Urgences et Soins Critiques', NULL, NULL, 1, '2026-01-11 00:36:02');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `prelevements`
 --
 
@@ -2043,7 +2536,7 @@ CREATE TABLE IF NOT EXISTS `profils_utilisateurs` (
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `profils_utilisateurs`
@@ -2369,10 +2862,38 @@ CREATE TABLE IF NOT EXISTS `sauvegardes` (
   `duree_sauvegarde` int DEFAULT NULL COMMENT 'En secondes',
   `utilisateur_id` int DEFAULT NULL,
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  `backup_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type_backup` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'COMPLETE',
+  `date_debut` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_fin` datetime DEFAULT NULL,
+  `localisation_secondaire` longtext COLLATE utf8mb4_unicode_ci,
+  `checksum_sha256` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cle_chiffrement` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `compression` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nombre_fichiers` int DEFAULT NULL,
+  `nombre_tables` int DEFAULT NULL,
+  `date_expiration` datetime DEFAULT NULL,
+  `message_erreur` longtext COLLATE utf8mb4_unicode_ci,
+  `notes` longtext COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_hopital_sauvegarde` (`hopital_id`,`numero_sauvegarde`),
-  KEY `utilisateur_id` (`utilisateur_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `backup_id` (`backup_id`),
+  KEY `utilisateur_id` (`utilisateur_id`),
+  KEY `idx_date_debut` (`date_debut`),
+  KEY `idx_type_backup` (`type_backup`),
+  KEY `idx_statut` (`statut`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `sauvegardes`
+--
+
+INSERT INTO `sauvegardes` (`id`, `hopital_id`, `numero_sauvegarde`, `date_sauvegarde`, `type_sauvegarde`, `taille_sauvegarde`, `localisation_sauvegarde`, `statut`, `duree_sauvegarde`, `utilisateur_id`, `date_creation`, `backup_id`, `type_backup`, `date_debut`, `date_fin`, `localisation_secondaire`, `checksum_sha256`, `cle_chiffrement`, `compression`, `nombre_fichiers`, `nombre_tables`, `date_expiration`, `message_erreur`, `notes`) VALUES
+(1, 1, 'BKP-554c639304124b57-1768628662', '2026-01-17 07:44:22', NULL, NULL, '/backups/2026-01-17/', 'PENDING', NULL, 1, '2026-01-17 07:44:22', 'BKP-554c639304124b57-1768628662', 'COMPLETE', '2026-01-17 07:44:22', NULL, 's3://backups/2026-01-17/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 1, 'BKP-8fdcc2d032cd6c16-1768628740', '2026-01-17 07:45:40', NULL, NULL, '/backups/2026-01-17/', 'PENDING', NULL, 1, '2026-01-17 07:45:40', 'BKP-8fdcc2d032cd6c16-1768628740', 'INCREMENTAL', '2026-01-17 07:45:40', NULL, 's3://backups/2026-01-17/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(3, 1, 'BKP-bf590aff23201b05-1768629151', '2026-01-17 07:52:31', NULL, 1073741824, '/backups/2026-01-17/', 'SUCCESS', 3600, 1, '2026-01-17 07:52:31', 'BKP-bf590aff23201b05-1768629151', 'COMPLETE', '2026-01-17 07:52:31', '2026-01-17 06:19:19', 's3://backups/2026-01-17/', 'abc123def456x4lt5g', NULL, NULL, 5000, 45, NULL, NULL, NULL),
+(4, 1, 'BKP-86d8f5d5e5803da8-1768630365', '2026-01-17 08:12:45', NULL, 1073741824, '/backups/2026-01-17/', 'SUCCESS', 3600, 1, '2026-01-17 08:12:45', 'BKP-86d8f5d5e5803da8-1768630365', 'COMPLETE', '2026-01-17 08:12:45', '2026-01-17 06:17:52', 's3://backups/2026-01-17/', 'abc123def456q0bg8o', NULL, NULL, 5000, 45, NULL, NULL, NULL),
+(5, 1, 'BKP-b02fa8138e1fbf7f-1768631120', '2026-01-17 08:25:20', NULL, 7208960, '/backups/2026-01-17/', 'SUCCESS', 2, 1, '2026-01-17 08:25:20', 'BKP-b02fa8138e1fbf7f-1768631120', 'COMPLETE', '2026-01-17 08:25:20', NULL, 's3://backups/2026-01-17/', '6175a2950c6d6a7844b4c324071c36afc5883d26ba4100a16f4d644410a0eee5', NULL, 'GZIP', 486, 98, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2384,10 +2905,12 @@ DROP TABLE IF EXISTS `services`;
 CREATE TABLE IF NOT EXISTS `services` (
   `id` int NOT NULL AUTO_INCREMENT,
   `hopital_id` int NOT NULL,
+  `pole_id` int DEFAULT NULL,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `nom` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `type_service` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Urgences, Chirurgie, Médecine, Pédiatrie, etc.',
+  `type_service_id` int DEFAULT NULL,
   `chef_service_id` int DEFAULT NULL,
   `nombre_lits` int DEFAULT NULL,
   `localisation` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -2397,11 +2920,25 @@ CREATE TABLE IF NOT EXISTS `services` (
   `couleur_service` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `actif` tinyint(1) DEFAULT '1',
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  `budget_annuel` decimal(12,2) DEFAULT NULL,
+  `nombre_personnel` int DEFAULT NULL,
+  `horaires_ouverture` longtext COLLATE utf8mb4_unicode_ci,
+  `niveau_accreditation` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_code_hopital` (`hopital_id`,`code`),
   KEY `idx_hopital` (`hopital_id`),
-  KEY `idx_type` (`type_service`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `idx_type` (`type_service`),
+  KEY `idx_pole` (`pole_id`),
+  KEY `idx_type_service_id` (`type_service_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `services`
+--
+
+INSERT INTO `services` (`id`, `hopital_id`, `pole_id`, `code`, `nom`, `description`, `type_service`, `type_service_id`, `chef_service_id`, `nombre_lits`, `localisation`, `telephone`, `email`, `logo_service`, `couleur_service`, `actif`, `date_creation`, `budget_annuel`, `nombre_personnel`, `horaires_ouverture`, `niveau_accreditation`) VALUES
+(1, 1, NULL, 'CARD', 'Cardiologie', '', 'Spécialité médicale', NULL, NULL, 11, '', '', '', NULL, NULL, 1, '2026-01-10 10:50:12', NULL, NULL, NULL, NULL),
+(2, 1, 1, 'CAR', 'Cardiologie', NULL, 'CA', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-01-11 01:21:10', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2448,7 +2985,14 @@ CREATE TABLE IF NOT EXISTS `specialites` (
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `specialites`
+--
+
+INSERT INTO `specialites` (`id`, `code`, `nom`, `description`, `code_snomed`, `icone`, `couleur`, `actif`, `date_creation`) VALUES
+(1, 'CARD', 'Cardiologue', 'Spécialité en cardiologie', NULL, NULL, NULL, 1, '2026-01-11 10:22:49');
 
 -- --------------------------------------------------------
 
@@ -2705,6 +3249,59 @@ CREATE TABLE IF NOT EXISTS `types_interventions` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `types_poles`
+--
+
+DROP TABLE IF EXISTS `types_poles`;
+CREATE TABLE IF NOT EXISTS `types_poles` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nom` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `actif` tinyint(1) DEFAULT '1',
+  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`),
+  KEY `idx_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `types_poles`
+--
+
+INSERT INTO `types_poles` (`id`, `code`, `nom`, `description`, `actif`, `date_creation`) VALUES
+(1, 'POL_URG', 'Urgence', NULL, 1, '2026-01-11 01:32:13');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `types_services`
+--
+
+DROP TABLE IF EXISTS `types_services`;
+CREATE TABLE IF NOT EXISTS `types_services` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nom` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` longtext COLLATE utf8mb4_unicode_ci,
+  `categorie` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `actif` tinyint(1) DEFAULT '1',
+  `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`),
+  KEY `idx_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `types_services`
+--
+
+INSERT INTO `types_services` (`id`, `code`, `nom`, `description`, `categorie`, `actif`, `date_creation`) VALUES
+(1, 'CA', 'Cardiologie', NULL, NULL, 1, '2026-01-11 01:20:38');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `utilisateurs`
 --
 
@@ -2746,6 +3343,11 @@ CREATE TABLE IF NOT EXISTS `utilisateurs` (
   `derniere_connexion` datetime DEFAULT NULL,
   `date_creation` datetime DEFAULT CURRENT_TIMESTAMP,
   `date_modification` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `secret_2fa` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pin_2fa` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `adresse_physique` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `date_livraison` date DEFAULT NULL,
+  `validite` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `login` (`login`),
@@ -2756,24 +3358,27 @@ CREATE TABLE IF NOT EXISTS `utilisateurs` (
   KEY `idx_profil` (`profil_id`),
   KEY `idx_actif` (`actif`),
   KEY `specialite_id` (`specialite_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `utilisateurs`
 --
 
-INSERT INTO `utilisateurs` (`id`, `hopital_id`, `profil_id`, `nom`, `prenom`, `email`, `telephone`, `login`, `mot_de_passe`, `role_id`, `specialite_id`, `numero_licence`, `numero_ordre`, `date_embauche`, `photo_profil`, `signature_numerique`, `bio`, `adresse`, `ville`, `code_postal`, `date_naissance`, `sexe`, `nationalite`, `numero_identite`, `type_identite`, `telephone_urgence`, `contact_urgence_nom`, `actif`, `compte_verrouille`, `nombre_tentatives_connexion`, `date_dernier_changement_mdp`, `mdp_temporaire`, `authentification_2fa`, `derniere_connexion`, `date_creation`, `date_modification`) VALUES
-(1, 1, 1, 'Dupont', 'Jean', 'admin@rehoboth.com', NULL, 'admin', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 1, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, '2026-01-03 08:11:52', '2026-01-03 09:02:41', '2026-01-03 10:11:52'),
-(2, 1, 2, 'Martin', 'Pierre', 'directeur@rehoboth.com', NULL, 'directeur', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 2, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:37:30'),
-(3, 1, 3, 'Bernard', 'Marie', 'medecin@rehoboth.com', NULL, 'medecin', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 3, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(4, 1, 4, 'Durand', 'Sophie', 'infirmier@rehoboth.com', NULL, 'infirmier', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 4, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(5, 1, 5, 'Lefevre', 'Thomas', 'pharmacien@rehoboth.com', NULL, 'pharmacien', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 5, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(6, 1, 6, 'Moreau', 'Luc', 'laborantin@rehoboth.com', NULL, 'laborantin', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 6, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(7, 1, 7, 'Girard', 'Anne', 'radiologue@rehoboth.com', NULL, 'radiologue', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 7, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(8, 1, 8, 'Petit', 'Jacques', 'comptable@rehoboth.com', NULL, 'comptable', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 8, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(9, 1, 9, 'Rousseau', 'Isabelle', 'rh@rehoboth.com', NULL, 'rh', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 9, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(10, 1, 10, 'Vincent', 'Marc', 'maintenance@rehoboth.com', NULL, 'maintenance', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 10, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41'),
-(11, 1, 11, 'Fournier', 'Nathalie', 'receptionniste@rehoboth.com', NULL, 'receptionniste', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 11, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:45', '2026-01-03 09:02:45');
+INSERT INTO `utilisateurs` (`id`, `hopital_id`, `profil_id`, `nom`, `prenom`, `email`, `telephone`, `login`, `mot_de_passe`, `role_id`, `specialite_id`, `numero_licence`, `numero_ordre`, `date_embauche`, `photo_profil`, `signature_numerique`, `bio`, `adresse`, `ville`, `code_postal`, `date_naissance`, `sexe`, `nationalite`, `numero_identite`, `type_identite`, `telephone_urgence`, `contact_urgence_nom`, `actif`, `compte_verrouille`, `nombre_tentatives_connexion`, `date_dernier_changement_mdp`, `mdp_temporaire`, `authentification_2fa`, `derniere_connexion`, `date_creation`, `date_modification`, `secret_2fa`, `pin_2fa`, `adresse_physique`, `date_livraison`, `validite`) VALUES
+(1, 1, 1, 'Dupont', 'Jean', 'admin@rehoboth.com', '', 'admin', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 1, NULL, NULL, NULL, '2026-01-03', NULL, NULL, '', '', '', '', '2026-01-11', '', '', NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, '2026-01-18 09:52:25', '2026-01-03 09:02:41', '2026-01-18 09:52:25', NULL, NULL, NULL, NULL, NULL),
+(2, 1, 2, 'Martin', 'Pierre', 'directeur@rehoboth.com', NULL, 'directeur', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 2, 1, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-11 10:23:16', NULL, NULL, NULL, NULL, NULL),
+(3, 1, 3, 'Bernard', 'Marie', 'amosamosamos2003@gmail.com', '099237283', 'medecin', '$2y$13$NcBwqnMy0xFBGOfS/YdWKOfdI5EVt20rlm2xR3ZijN2zMJBEZqcCa', 3, 1, '348EH84', '49824HHEEH', '2026-01-03', '/uploads/profils/photo_6963bcbbce21d.png', NULL, 'Medecin spécialiste cardiologue', 'Panzi', 'Bukavu', 'RI92894', '2001-06-11', 'M', 'Congolaise', 'OZF294ZOF', 'PASSPORT', '093480249', 'Amos', 1, 0, 1, '2026-01-11 02:18:54', 1, 1, '2026-01-11 02:16:39', '2026-01-03 09:02:41', '2026-01-12 06:58:54', 'UFZSH6QXISQ74GR4S45565ED47TR6M67', '$2y$12$Wq5CSvF9jfDEM/2NsTVvC.Ssk0tk8Y8ViiSXePwyDMEr2GTaggLwu', NULL, NULL, NULL),
+(4, 1, 4, 'Durand', 'Sophie', 'infirmier@rehoboth.com', NULL, 'infirmier', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 4, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 1, NULL, '2026-01-03 09:02:41', '2026-01-08 12:50:03', 'AKVNKCSL7U7WXZSHMXWAWECJKMVMJT5T', '$2y$12$9WXHSWFFuRCvkkNBWDYvYeiyZKM/jtTKaUkYJ/mhbKblg/UoI7dxW', NULL, NULL, NULL),
+(5, 1, 5, 'Lefevre', 'Thomas', 'pharmacien@rehoboth.com', NULL, 'pharmacien', '$2y$10$LP4/kQFz3h1B3VrQ6k8EDe5fsEQcLGk36rs1K4TqkMHtzdQLBWMju', 5, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-07 16:15:15', NULL, NULL, NULL, NULL, NULL),
+(6, 1, 6, 'Moreau', 'Luc', 'laborantin@rehoboth.com', NULL, 'laborantin', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 6, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41', NULL, NULL, NULL, NULL, NULL),
+(7, 1, 7, 'Girard', 'Anne', 'radiologue@rehoboth.com', NULL, 'radiologue', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 7, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41', NULL, NULL, NULL, NULL, NULL),
+(8, 1, 8, 'Petit', 'Jacques', 'comptable@rehoboth.com', NULL, 'comptable', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 8, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41', NULL, NULL, NULL, NULL, NULL),
+(9, 1, 9, 'Rousseau', 'Isabelle', 'rh@rehoboth.com', NULL, 'rh', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 9, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41', NULL, NULL, NULL, NULL, NULL),
+(10, 1, 10, 'Vincent', 'Marc', 'maintenance@rehoboth.com', NULL, 'maintenance', '$2y$13$8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8qJ8.8', 10, NULL, NULL, NULL, '2026-01-03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, NULL, 0, 0, NULL, '2026-01-03 09:02:41', '2026-01-03 09:02:41', NULL, NULL, NULL, NULL, NULL),
+(11, 1, 11, 'Fourniers', 'Nathalie', 'receptionniste@rehoboth.com', '0990090', 'receptionniste', '$2y$13$ObjLcIYm0nQTZyWndnjNhe1bkvq9XlzqIviYLuF.B5bP4ZyZKQo3y', 11, NULL, 'EOR2249', 'IOEF220', '2026-01-03', '/uploads/profils/photo_6967b5f5c9e4c.png', NULL, 'Réceptionniste de l\'entré principale ', 'Panzi', 'Bukavu', '0988ZASSA', '2005-11-12', 'F', 'Congolaise', 'IJE0929328', 'PASSPORT', '0998798', 'amos', 1, 0, 0, '2026-01-08 16:05:39', 1, 0, '2026-01-08 16:06:30', '2026-01-03 09:02:45', '2026-01-14 17:27:49', NULL, NULL, NULL, NULL, NULL),
+(12, 1, 1, 'amos', 'amoss', 'amos@gmail.com', '', 'amos', '$2y$13$92zHP8l5hQc76Wrmaa0q1uBUIhl4iyKQcCDTMBSljandCSMqOzPxC', 1, NULL, '', '', '2026-01-11', '/uploads/profils/photo_6963a54c9d144.png', NULL, '', '', '', '', '2026-01-11', '', '', '', '', '', '', 1, 0, 0, NULL, NULL, NULL, '2026-01-16 17:43:26', '2026-01-11 10:10:46', '2026-01-16 17:43:26', NULL, NULL, NULL, NULL, NULL),
+(13, 1, 2, 'bro', 'man', 'man@gmail.com', '', 'man', '$2y$13$efxb0uNDvgr9eUwIUsivb.8sWmwWMYvlowwxpzhyQvzF3VbyyeXGm', 2, NULL, '', '', '2026-01-11', '/uploads/profils/photo_6963a0ad49495.png', NULL, '', '', '', '', '2026-01-11', '', '', '', '', '', '', 1, NULL, NULL, NULL, NULL, 0, '2026-01-12 10:37:48', '2026-01-11 14:47:09', '2026-01-12 10:39:17', NULL, NULL, NULL, NULL, NULL),
+(14, 1, 5, 'jean', 'iragi', 'j@gmail.com', '', 'jean', '$2y$13$2y0FHmfOQx1/G67AvQQ3T.8IziuohFtq80wP0y4UIODSThffYwQK6', 5, NULL, '', '', '2026-01-11', '/uploads/profils/photo_6963a0ec4a994.png', NULL, '', 'Panzi', 'Bukavu', '', '2026-01-11', '', '', '', '', '', '', 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-11 15:08:59', '2026-01-11 16:05:14', NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Contraintes pour les tables déchargées
@@ -2829,6 +3434,13 @@ ALTER TABLE `assurances_patients`
   ADD CONSTRAINT `assurances_patients_ibfk_2` FOREIGN KEY (`convention_id`) REFERENCES `conventions_assurance` (`id`);
 
 --
+-- Contraintes pour la table `backup_schedules`
+--
+ALTER TABLE `backup_schedules`
+  ADD CONSTRAINT `FK_backup_schedules_hopital` FOREIGN KEY (`hopital_id`) REFERENCES `hopitaux` (`id`),
+  ADD CONSTRAINT `FK_backup_schedules_utilisateur` FOREIGN KEY (`utilisateur_id`) REFERENCES `utilisateurs` (`id`);
+
+--
 -- Contraintes pour la table `bons_commande`
 --
 ALTER TABLE `bons_commande`
@@ -2851,6 +3463,13 @@ ALTER TABLE `bulletins_paie`
 ALTER TABLE `certifications`
   ADD CONSTRAINT `certifications_ibfk_1` FOREIGN KEY (`utilisateur_id`) REFERENCES `utilisateurs` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `certifications_ibfk_2` FOREIGN KEY (`hopital_id`) REFERENCES `hopitaux` (`id`) ON DELETE CASCADE;
+
+--
+-- Contraintes pour la table `chambres`
+--
+ALTER TABLE `chambres`
+  ADD CONSTRAINT `FK_CHAMBRES_HOPITAL` FOREIGN KEY (`hopital_id`) REFERENCES `hopitaux` (`id`),
+  ADD CONSTRAINT `FK_CHAMBRES_SERVICE` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`);
 
 --
 -- Contraintes pour la table `comptes_portail_patient`
@@ -3125,6 +3744,13 @@ ALTER TABLE `medicaments`
   ADD CONSTRAINT `medicaments_ibfk_2` FOREIGN KEY (`taux_tva_id`) REFERENCES `taux_tva` (`id`) ON DELETE SET NULL;
 
 --
+-- Contraintes pour la table `menu_roles`
+--
+ALTER TABLE `menu_roles`
+  ADD CONSTRAINT `menu_roles_ibfk_1` FOREIGN KEY (`menu_id`) REFERENCES `menus` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `menu_roles_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
+
+--
 -- Contraintes pour la table `messages_securises`
 --
 ALTER TABLE `messages_securises`
@@ -3246,6 +3872,14 @@ ALTER TABLE `planning_operatoire`
   ADD CONSTRAINT `planning_operatoire_ibfk_5` FOREIGN KEY (`chirurgien_id`) REFERENCES `utilisateurs` (`id`);
 
 --
+-- Contraintes pour la table `poles_activite`
+--
+ALTER TABLE `poles_activite`
+  ADD CONSTRAINT `FK_POLES_HOPITAL` FOREIGN KEY (`hopital_id`) REFERENCES `hopitaux` (`id`),
+  ADD CONSTRAINT `FK_POLES_RESPONSABLE` FOREIGN KEY (`responsable_id`) REFERENCES `utilisateurs` (`id`),
+  ADD CONSTRAINT `FK_POLES_TYPE_POLE` FOREIGN KEY (`type_pole_id`) REFERENCES `types_poles` (`id`) ON DELETE SET NULL;
+
+--
 -- Contraintes pour la table `prelevements`
 --
 ALTER TABLE `prelevements`
@@ -3350,6 +3984,8 @@ ALTER TABLE `sauvegardes`
 -- Contraintes pour la table `services`
 --
 ALTER TABLE `services`
+  ADD CONSTRAINT `FK_SERVICES_POLE` FOREIGN KEY (`pole_id`) REFERENCES `poles_activite` (`id`),
+  ADD CONSTRAINT `FK_SERVICES_TYPE_SERVICE` FOREIGN KEY (`type_service_id`) REFERENCES `types_services` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `services_ibfk_1` FOREIGN KEY (`hopital_id`) REFERENCES `hopitaux` (`id`) ON DELETE CASCADE;
 
 --

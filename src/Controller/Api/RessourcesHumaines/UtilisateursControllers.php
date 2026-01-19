@@ -2886,7 +2886,7 @@ class UtilisateursControllers extends AbstractController
         int $serviceId,
         Request $request,
         \App\Service\ServiceCardGeneratorService $cardGenerator
-    ): Response|JsonResponse {
+     ): Response|JsonResponse {
         try {
             $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
             if (!$utilisateur) {
@@ -2974,7 +2974,7 @@ class UtilisateursControllers extends AbstractController
         int $serviceId,
         Request $request,
         \App\Service\ServiceCardGeneratorService $cardGenerator
-    ): Response|JsonResponse {
+     ): Response|JsonResponse {
         try {
             $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
             if (!$utilisateur) {
@@ -3043,7 +3043,7 @@ class UtilisateursControllers extends AbstractController
         Request $request,
         \App\Service\ServiceCardGeneratorService $cardGenerator,
         \App\Service\ServiceCardPermissionService $permissionService
-    ): Response|JsonResponse {
+     ): Response|JsonResponse {
         try {
             $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
             if (!$utilisateur) {
@@ -3105,7 +3105,7 @@ class UtilisateursControllers extends AbstractController
     public function getAccessibleServices(
         int $userId,
         \App\Service\ServiceCardPermissionService $permissionService
-    ): JsonResponse {
+     ): JsonResponse {
         try {
             $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
             if (!$utilisateur) {
@@ -3160,7 +3160,7 @@ class UtilisateursControllers extends AbstractController
     public function getAffectedServices(
         int $userId,
         \App\Service\ServiceCardPermissionService $permissionService
-    ): JsonResponse {
+     ): JsonResponse {
         try {
             $utilisateur = $this->entityManager->getRepository(Utilisateurs::class)->find($userId);
             if (!$utilisateur) {

@@ -11,7 +11,7 @@ nelmio_cors:
         # Headers exposés dans les réponses
         expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
         # Durée de cache des preflight requests (en secondes)
-        max_age: 3600
+        max_age: 86400
         # Autoriser les cookies et credentials
         allow_credentials: true
     
@@ -24,7 +24,7 @@ nelmio_cors:
             allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']
             allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
             expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
-            max_age: 3600
+            max_age: 86400
             allow_credentials: true
         
         # Configuration spécifique pour les endpoints API
@@ -34,5 +34,5 @@ nelmio_cors:
             allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']
             allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
             expose_headers: ['Link', 'X-Total-Count', 'X-Page-Number', 'Content-Type']
-            max_age: 3600
+            max_age: 86400
             allow_credentials: true
